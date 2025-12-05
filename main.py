@@ -1,12 +1,6 @@
 from munkres import Munkres, print_matrix
 import numpy as np
 
-matrix_size = 3
-matrix = np.random.randint(0, 100, size=(matrix_size, matrix_size))
-#print_matrix(matrix)
-
-np_matrix = matrix
-
 def MunkresAlg(np_matrix: np.matrix) -> int:
     sizes = np_matrix.shape
     if sizes[0] != sizes[1]:
@@ -23,5 +17,10 @@ def MunkresAlg(np_matrix: np.matrix) -> int:
     print(f'total cost: {total}')
     return total
 
-final_num = MunkresAlg(np_matrix)
-print(final_num)
+if __name__ == "__main__":
+    matrix_size = 3
+    matrix = np.random.randint(0, 100, size=(matrix_size, matrix_size))
+    #print_matrix(matrix)
+    np_matrix = matrix
+    final_num = MunkresAlg(np_matrix)
+    print(final_num)
