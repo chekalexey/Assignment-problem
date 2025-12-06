@@ -59,24 +59,16 @@ class MatrixGenerator:
         return beta_matrix
     
     def _generate_data(self):
-        self.a_vector = np.random.uniform(self.a_min, self.a_max, self.n)
+        self.C_matrix = np.random.uniform(
+            self.a_min, self.a_max, (self.n, self.v)
+        )
         
         self.beta_matrix = self._generate_beta_matrix()
-        
-        self.C_matrix = np.zeros((self.n, self.v))
-        self.C_matrix[:, 0] = self.a_vector
         
         for j in range(1, self.v):
             self.C_matrix[:, j] = self.C_matrix[:, j-1] * self.beta_matrix[:, j-1]
         
-        self.D_matrix = np.zeros((self.n, self.v))
-        
-        for i in range(self.n):
-            for j in range(self.v-1, -1, -1):
-                if j == self.v-1:
-                    self.D_matrix[i, j] = self.C_matrix[i, j]
-                else:
-                    self.D_matrix[i, j] = self.D_matrix[i, j+1] + self.C_matrix[i, j]
+        self.D_matrix = self.C_matrix.copy()
     
     def get_D_matrix(self) -> np.ndarray:
         return self.D_matrix
