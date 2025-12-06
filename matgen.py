@@ -72,10 +72,133 @@ class MatrixGenerator:
     
     def get_D_matrix(self) -> np.ndarray:
         return self.D_matrix
+    
+class algo:
+    def __init__(self, matrix):
+        self._params = np.array(matrix)
 
+    def _params(self):
+        return self.__params
+    
+    def _find_max_in_column(self, column_id, excluded=None):
+        if excluded is None:
+            excluded = set()
+        
+        col = self._params[:, column_id]
+        
+        mask = [i for i in range(len(col)) if i not in excluded]
+        
+        if not mask:
+            return -1, -1
+        
+        valid_values = col[mask]
+        
+        max_val = np.max(valid_values)
+        max_idx_in_valid = np.argmax(valid_values)
+        row_idx = mask[max_idx_in_valid]
+        
+        return max_val, row_idx
+    
+    def _find_k_min_in_column(self, column_id, excluded_rows=None, k=1):
+        if excluded_rows is None:
+            excluded_rows = set()
+        
+        col = self._params[:, column_id]
+        
+        mask = [i for i in range(len(col)) if i not in excluded_rows]
+        
+        if not mask:
+            return -1, -1
+        
+        valid_values = col[mask]
+        
+        k = min(k, len(valid_values))
+        
+        k_smallest_indices = np.argpartition(valid_values, k - 1)
+        kth_idx_in_valid = k_smallest_indices[k - 1]
+        
+        kth_val = valid_values[kth_idx_in_valid]
+        row_idx = mask[kth_idx_in_valid]
+        
+        return kth_val, row_idx
+    
+    def Greedy(self):
+        res = 0
+        _, cols = self._params.shape
+        assigned = set()
+        values = []
+
+        for i in range(cols):
+            val, row = self._find_max_in_column(i, assigned)
+            
+            if row != -1:
+                res += val
+                assigned.add(row)
+                values.append(val)
+
+        return res, np.array(values)
+    
+    def Thrifty(self):
+        res = 0
+        _, cols = self._params.shape
+        assigned = set()
+        values = []
+
+        for i in range(cols):
+            val, row = self._find_k_min_in_column(i, assigned)
+            
+            if row != -1:
+                res += val
+                assigned.add(row)
+                values.append(val)
+
+        return res, np.array(values)
+    
+    def Greedy_Thrifty(self, x):
+        res = 0
+        _, cols = self._params.shape
+        assigned = set()
+        values = []
+
+        for i in range(cols):
+            if i < x:
+                val, row = self._find_max_in_column(i, assigned)
+            else:
+                val, row = self._find_k_min_in_column(i, assigned)
+            
+            if row != -1:
+                res += val
+                assigned.add(row)
+                values.append(val)
+
+        return res, np.array(values)
+    
+    def Thrifty_Greedy(self, x):
+        res = 0
+        _, cols = self._params.shape
+        assigned = set()
+        values = []
+
+        for i in range(cols):
+            if i < x:
+                val, row = self._find_k_min_in_column(i, assigned)
+            else:
+                val, row = self._find_max_in_column(i, assigned)
+            
+            if row != -1:
+                res += val
+                assigned.add(row)
+                values.append(val)
+
+        return res, np.array(values)
 
 if __name__ == "__main__":
     #Example
     gen1 = MatrixGenerator(3, 3, "concentrated") #or uniform
     print(gen1.D_matrix)
+    a = algo(gen1.D_matrix)
+    print(a.Greedy())
+    print(a.Thrifty())
+    print(a.Greedy_Thrifty(1))
+    print(a.Thrifty_Greedy(1))
     
