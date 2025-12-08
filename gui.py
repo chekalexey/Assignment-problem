@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
                               QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QIntValidator, QDoubleValidator)
+from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap)
 from matgen import *
 import sys
 
@@ -77,7 +77,10 @@ class MainWindow(QMainWindow):
     def create_third_page(self):
         """Третья страница"""
         page = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QHBoxLayout(page)
+
+        left_widget = QWidget()
+        optionsLayout = QVBoxLayout(left_widget)
 
         title = QLabel("Страница 3")
         title.setAlignment(Qt.AlignCenter)
@@ -122,30 +125,70 @@ class MainWindow(QMainWindow):
         gb = QGroupBox("sugar😎")
         gb.setLayout(radio_buttons_layout)
 
-        self.line_button = QPushButton("Получить значение", self)
+        self.line_button = QPushButton("Получить результаты эксперимента", self)
         self.line_button.clicked.connect(self.get_integer_from_line_edit)
 
         self.result_label = QLabel("Result: ", self)
+        
+        ######################SVEKLA########################
+        image_label = QLabel()
+        try:
+            # Загружаем картинку
+            pixmap = QPixmap('svekla.jpg')
+            if pixmap.isNull():
+                # Если картинка не загрузилась, создаем заглушку
+                pixmap = QPixmap(400, 400)
+                pixmap.fill(Qt.red)  # Красный фон
+                image_label.setText("Картинка не найдена")
+                image_label.setAlignment(Qt.AlignCenter)
+            else:
+                # Масштабируем картинку, если нужно
+                image_label.setPixmap(pixmap.scaled(600, 600, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        except Exception as e:
+            # Если произошла ошибка при загрузке
+            pixmap = QPixmap(300, 300)
+            pixmap.fill(Qt.gray)
+            image_label.setPixmap(pixmap)
+            image_label.setText(f"Ошибка: {str(e)}")
+            image_label.setAlignment(Qt.AlignCenter)
+            image_label.setWordWrap(True)
+        image_label.setAlignment(Qt.AlignCenter)
+        image_label.setStyleSheet("border: 1px solid #ccc; padding: 10px;")
+        ####################################################
+
         #колво экспериментов, альфа мин макс, бета мин макс, размер матрицы, концетрированое/равномерное распределение сахаристости
-        layout.addWidget(title)
-        layout.addStretch()
-        layout.addWidget(QLabel("Это страница эксперементального режима"))
+        optionsLayout.addWidget(title)
+        optionsLayout.addStretch()
+        optionsLayout.addWidget(QLabel("Это страница эксперементального режима"))
 
-        layout.addWidget(self.number_of_experminets)
-        layout.addWidget(self.alpha_min)
-        layout.addWidget(self.alpha_max)
-        layout.addWidget(self.beta_min)
-        layout.addWidget(self.beta_max)
-        layout.addWidget(self.matrix_size)
-        layout.addWidget(gb)
+        optionsLayout.addWidget(QLabel("Количество экспериментов:"))
+        optionsLayout.addWidget(self.number_of_experminets)
+        optionsLayout.addWidget(QLabel("Alpha min:"))
+        optionsLayout.addWidget(self.alpha_min)
+        optionsLayout.addWidget(QLabel("Alpha max:"))
+        optionsLayout.addWidget(self.alpha_max)
+        optionsLayout.addWidget(QLabel("Beta min:"))
+        optionsLayout.addWidget(self.beta_min)
+        optionsLayout.addWidget(QLabel("Beta max:"))
+        optionsLayout.addWidget(self.beta_max)
+        optionsLayout.addWidget(QLabel("Размер матрицы:"))
+        optionsLayout.addWidget(self.matrix_size)
+        optionsLayout.addWidget(gb)
 
-        layout.addWidget(self.line_button)
-        layout.addWidget(self.result_label)
-        layout.addStretch()
-        layout.addWidget(btn_back)
-        layout.addWidget(btn_home)
+        optionsLayout.addWidget(self.line_button)
+        optionsLayout.addWidget(self.result_label)
+        optionsLayout.addStretch()
 
-        page.setLayout(layout)
+        # Кнопки навигации
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(btn_back)
+        button_layout.addWidget(btn_home)
+        optionsLayout.addLayout(button_layout)
+
+        main_layout.addWidget(left_widget, stretch=1)
+        main_layout.addWidget(image_label, stretch=2)
+
+        page.setLayout(main_layout)
         self.stacked_widget.addWidget(page)
 
     def go_to_page(self, index):
@@ -164,8 +207,11 @@ class MainWindow(QMainWindow):
                 sugar = self.concentrated.text()
             elif self.uniform.isChecked():
                 sugar = self.uniform.text()
-            #z = 0
-            sum = 0
+
+            sumGreedy = 0
+            sumThrifty = 0
+            sumGreedyThrifty = 0
+            sumThriftyGreedy = 0
 
             for i in range(number_of_experminets):
                 thingie = MatrixGenerator(n=matrix_size, v=matrix_size, distribution_type=sugar, a_min=alpha_min, a_max=alpha_max, beta_min=beta_min, beta_max=beta_max)
@@ -174,14 +220,23 @@ class MainWindow(QMainWindow):
                 a = algo(thingie.D_matrix)
                 print(a.Greedy())
                 print(a.Thrifty())
-                print(a.Greedy_Thrifty(1))
-                print(a.Thrifty_Greedy(1))
-                #z += a.Greedy()[0]
-                z,v = a.Greedy()
-                sum += z
+                print(a.Greedy_Thrifty(matrix_size//2))
+                print(a.Thrifty_Greedy(matrix_size//2))
+                #x += a.Greedy()[0]
+                x, y = a.Greedy()
+                sumGreedy += x
+                x, y = a.Thrifty()
+                sumThrifty += x
+                x, y = a.Greedy_Thrifty(matrix_size//2)
+                sumGreedyThrifty += x
+                x, y = a.Thrifty_Greedy(matrix_size//2)
+                sumThriftyGreedy += x
                 
                 print("------------------------------------------")
-            print(f"total sum {sum}")
+            print(f"total sumGreedy {sumGreedy}")
+            print(f"total sumThrifty {sumThrifty}")
+            print(f"total sumGreedyThrifty {sumGreedyThrifty}")
+            print(f"total sumThriftyGreedy {sumThriftyGreedy}")
             # print(sugar)
             # print(number_of_experminets, alpha_min, alpha_max, beta_min, beta_max, matrix_size)
 
