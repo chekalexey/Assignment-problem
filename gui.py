@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                              QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy)
+                              QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy, QTextEdit)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap)
+from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette)
 from matgen import *
 import sys
 import numpy as np
@@ -58,9 +58,9 @@ class MainWindow(QMainWindow):
         left_widget = QWidget()
         optionsLayout = QVBoxLayout(left_widget)
 
-        title = QLabel("Страница 2")
+        title = QLabel("Ручной режим")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 24px; font-weight: bold; margin: 20px;")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; margin: 5px;")
 
         btn_back = QPushButton("← Назад в меню")
         btn_back.clicked.connect(lambda: self.go_to_page(0))
@@ -84,6 +84,11 @@ class MainWindow(QMainWindow):
         self.matrix_size_spin.setValue(3)
         self.matrix_size_spin.valueChanged.connect(self.update_matrix_display)
         size_layout.addWidget(self.matrix_size_spin)
+        
+        # Кнопка очистки матрицы
+        self.clear_matrix_button = QPushButton("Очистить матрицу")
+        self.clear_matrix_button.clicked.connect(self.clear_matrix)
+        size_layout.addWidget(self.clear_matrix_button)
         
         size_layout.addStretch()
         matrix_layout.addLayout(size_layout)
@@ -151,10 +156,17 @@ class MainWindow(QMainWindow):
         # image_label.setStyleSheet("border: 1px solid #ccc; padding: 10px;")
         ####################################################
 
+        self.textOutput = QTextEdit()
+        self.textOutput.setFixedHeight(100)
+        #self.textOutput.setStyleSheet()
+        self.textOutput.setReadOnly(True)
+
         optionsLayout.addWidget(title)
-        optionsLayout.addWidget(QLabel("Это страница ручного режима"))
+        #optionsLayout.addWidget(QLabel("Это страница ручного режима"))
         optionsLayout.addWidget(matrix_group)  # Добавляем матрицу
         optionsLayout.addWidget(self.line_button)
+        #optionsLayout.addStretch(1)
+        optionsLayout.addWidget(self.textOutput)
         #optionsLayout.addStretch()
 
         # Кнопки навигации
@@ -229,6 +241,12 @@ class MainWindow(QMainWindow):
             row_inputs = []
             for j in range(size):
                 line_edit = QLineEdit()
+                line_edit.setStyleSheet("""
+                    QLineEdit {
+                        background-color: #ffc2c2;
+                    }
+                """)
+                #line_edit.mousePressEvent = lambda _ : line_edit.selectAll() #select text in line edit upon mouse press
                 line_edit.setFixedSize(CELL_WIDTH, CELL_HEIGHT)
                 line_edit.setAlignment(Qt.AlignCenter)
                 line_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -239,10 +257,11 @@ class MainWindow(QMainWindow):
                 line_edit.setValidator(validator)
                 
                 # Устанавливаем значение по умолчанию
-                if i == j:
-                    line_edit.setText("0")
-                else:
-                    line_edit.setText("1")
+                # if i == j:
+                #     line_edit.setText("0")
+                # else:
+                #     line_edit.setText("1")
+                line_edit.setText("")
                 
                 # Добавляем с учетом заголовков (i+1, j+1) с выравниванием по центру
                 self.matrix_grid_layout.addWidget(line_edit, i+1, j+1, alignment=Qt.AlignCenter)
@@ -289,20 +308,40 @@ class MainWindow(QMainWindow):
             print(f"Ошибка получения данных матрицы: {e}")
             return None
 
+    def clear_matrix(self):
+        """Зануляет все ячейки матрицы"""
+        size = self.matrix_size_spin.value()
+        for i in range(size):
+            for j in range(size):
+                if i < len(self.matrix_inputs) and j < len(self.matrix_inputs[i]):
+                    self.matrix_inputs[i][j].setText("0")
+
     def get_integer_from_line_edit_and_matrix(self):
+        lineEditStr = ""
         matrix = self.get_matrix_data()
         a = algo(matrix)
-        print(a.Munkres_Alg())
+
         x, y = a.Munkres_Alg()
-        print(f"total Munkres_Alg {x}")
+        lineEditStr += f"total Munkres_Alg {x} {y}\n"
+        print(f"total Munkres_Alg {x} {y}")
+
         x, y = a.Greedy()
-        print(f"total Greedy {x}")
+        lineEditStr += f"total Greedy {x} {y}\n"
+        print(f"total Greedy {x} {y}")
+
         x, y = a.Thrifty()
-        print(f"total Thrifty{x}")
-        x, y = a.Greedy_Thrifty()
-        print(f"total Greedy_Thrifty {x}")
-        x, y = a.Thrifty_Greedy()
-        print(f"total Thrifty_Greedy {x}")
+        lineEditStr += f"total Thrifty {x} {y}\n"
+        print(f"total Thrifty {x} {y}")
+
+        x, y = a.Greedy_Thrifty(matrix.shape[0]//2)
+        lineEditStr += f"total Greedy_Thrifty {x} {y}\n"
+        print(f"total Greedy_Thrifty {x} {y}")
+
+        x, y = a.Thrifty_Greedy(matrix.shape[0]//2)
+        lineEditStr += f"total Thrifty_Greedy {x} {y}\n"
+        print(f"total Thrifty_Greedy {x} {y}")
+
+        self.textOutput.setText(lineEditStr)
 
 
     def create_third_page(self):
