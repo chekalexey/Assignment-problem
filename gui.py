@@ -208,6 +208,7 @@ class MainWindow(QMainWindow):
             elif self.uniform.isChecked():
                 sugar = self.uniform.text()
 
+            sumMunkresAlg = 0
             sumGreedy = 0
             sumThrifty = 0
             sumGreedyThrifty = 0
@@ -218,11 +219,14 @@ class MainWindow(QMainWindow):
                 print(f"matrix number {i+1}")
                 print(thingie.D_matrix)
                 a = algo(thingie.D_matrix)
+                print(a.Munkres_Alg())
                 print(a.Greedy())
                 print(a.Thrifty())
                 print(a.Greedy_Thrifty(matrix_size//2))
                 print(a.Thrifty_Greedy(matrix_size//2))
                 #x += a.Greedy()[0]
+                x, y = a.Munkres_Alg()
+                sumMunkresAlg += x
                 x, y = a.Greedy()
                 sumGreedy += x
                 x, y = a.Thrifty()
@@ -233,6 +237,7 @@ class MainWindow(QMainWindow):
                 sumThriftyGreedy += x
                 
                 print("------------------------------------------")
+            print(f"total sumMunkresAlg {sumMunkresAlg}")
             print(f"total sumGreedy {sumGreedy}")
             print(f"total sumThrifty {sumThrifty}")
             print(f"total sumGreedyThrifty {sumGreedyThrifty}")

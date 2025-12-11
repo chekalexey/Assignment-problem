@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Tuple
+from munkres import Munkres
 
 class MatrixGenerator:    
     def __init__(
@@ -122,6 +123,23 @@ class algo:
         
         return kth_val, row_idx
     
+    def Munkres_Alg(self):
+        res = 0
+        sizes = self._params.shape
+        assigned = set()
+        values = []
+
+        m = Munkres()
+        indexes = m.compute(self._params.tolist())
+        total = 0
+        for row, column in indexes:
+            value = self._params[row][column]
+            total += value
+            assigned.add(row)
+            values.append(value)
+        return total, np.array(values)
+
+
     def Greedy(self):
         res = 0
         _, cols = self._params.shape
@@ -197,6 +215,7 @@ if __name__ == "__main__":
     gen1 = MatrixGenerator(3, 3, "concentrated") #or uniform
     print(gen1.D_matrix)
     a = algo(gen1.D_matrix)
+    print(a.Munkres_Alg())
     print(a.Greedy())
     print(a.Thrifty())
     print(a.Greedy_Thrifty(1))
