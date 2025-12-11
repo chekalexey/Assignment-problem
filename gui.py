@@ -1,9 +1,10 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                              QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox)
+                              QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy)
 from PySide6.QtCore import Qt
 from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap)
 from matgen import *
 import sys
+import numpy as np
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -52,7 +53,10 @@ class MainWindow(QMainWindow):
     def create_second_page(self):
         """Вторая страница"""
         page = QWidget()
-        layout = QVBoxLayout()
+        main_layout = QHBoxLayout(page)
+
+        left_widget = QWidget()
+        optionsLayout = QVBoxLayout(left_widget)
 
         title = QLabel("Страница 2")
         title.setAlignment(Qt.AlignCenter)
@@ -63,16 +67,243 @@ class MainWindow(QMainWindow):
 
         btn_next = QPushButton("Далее →")
         btn_next.clicked.connect(lambda: self.go_to_page(2))
+        
+        self.line_button = QPushButton("Получить результаты эксперимента", self)
+        self.line_button.clicked.connect(self.get_integer_from_line_edit_and_matrix)
 
-        layout.addWidget(title)
-        layout.addStretch()
-        layout.addWidget(QLabel("Это страница ручного режима"))
-        layout.addStretch()
-        layout.addWidget(btn_back)
-        layout.addWidget(btn_next)
+        # === ДОБАВЛЕНА МАТРИЦА ===
+        matrix_group = QGroupBox("Матрица")
+        matrix_layout = QVBoxLayout()
+        
+        # Управление размером
+        size_layout = QHBoxLayout()
+        size_layout.addWidget(QLabel("Размер:"))
+        
+        self.matrix_size_spin = QSpinBox()
+        self.matrix_size_spin.setRange(2, 16)
+        self.matrix_size_spin.setValue(3)
+        self.matrix_size_spin.valueChanged.connect(self.update_matrix_display)
+        size_layout.addWidget(self.matrix_size_spin)
+        
+        size_layout.addStretch()
+        matrix_layout.addLayout(size_layout)
+        
+        # Контейнер для матрицы
+        self.matrix_container = QWidget()
+        self.matrix_grid_layout = QGridLayout(self.matrix_container)
+        self.matrix_grid_layout.setSpacing(2)  # Уменьшено расстояние между ячейками
+        self.matrix_grid_layout.setContentsMargins(5, 5, 5, 5)
+        
+        # Обертка для центрирования матрицы
+        self.matrix_wrapper = QWidget()
+        wrapper_layout = QVBoxLayout(self.matrix_wrapper)
+        wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        wrapper_layout.addStretch()
+        
+        # Горизонтальный layout для центрирования по горизонтали
+        h_layout = QHBoxLayout()
+        h_layout.addStretch()
+        h_layout.addWidget(self.matrix_container)
+        h_layout.addStretch()
+        
+        h_widget = QWidget()
+        h_widget.setLayout(h_layout)
+        wrapper_layout.addWidget(h_widget)
+        wrapper_layout.addStretch()
+        
+        # Прокрутка для матрицы
+        self.matrix_scroll_area = QScrollArea()
+        self.matrix_scroll_area.setWidgetResizable(True)
+        self.matrix_scroll_area.setWidget(self.matrix_wrapper)
+        self.matrix_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.matrix_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        # Устанавливаем минимальную высоту, которая будет динамически обновляться
+        self.matrix_scroll_area.setMinimumHeight(200)
+        
+        matrix_layout.addWidget(self.matrix_scroll_area, stretch=1)
+        
+        # Инициализация матрицы
+        self.matrix_inputs = []
+        self.create_matrix_inputs(3)
+        
+        matrix_group.setLayout(matrix_layout)
+        # === КОНЕЦ МАТРИЦЫ ===
+        
+        ######################SVEKLA########################
+        # image_label = QLabel()
+        # try:
+        #     pixmap = QPixmap('svekla.jpg')
+        #     if pixmap.isNull():
+        #         pixmap = QPixmap(400, 400)
+        #         pixmap.fill(Qt.red)
+        #         image_label.setText("Картинка не найдена")
+        #         image_label.setAlignment(Qt.AlignCenter)
+        #     else:
+        #         image_label.setPixmap(pixmap.scaled(600, 600, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        # except Exception as e:
+        #     pixmap = QPixmap(300, 300)
+        #     pixmap.fill(Qt.gray)
+        #     image_label.setPixmap(pixmap)
+        #     image_label.setText(f"Ошибка: {str(e)}")
+        #     image_label.setAlignment(Qt.AlignCenter)
+        #     image_label.setWordWrap(True)
+        # image_label.setAlignment(Qt.AlignCenter)
+        # image_label.setStyleSheet("border: 1px solid #ccc; padding: 10px;")
+        ####################################################
 
-        page.setLayout(layout)
+        optionsLayout.addWidget(title)
+        optionsLayout.addWidget(QLabel("Это страница ручного режима"))
+        optionsLayout.addWidget(matrix_group)  # Добавляем матрицу
+        optionsLayout.addWidget(self.line_button)
+        #optionsLayout.addStretch()
+
+        # Кнопки навигации
+        button_layout = QHBoxLayout()
+        button_layout.addWidget(btn_back)
+        button_layout.addWidget(btn_next)
+        optionsLayout.addLayout(button_layout)
+
+        main_layout.addWidget(left_widget, stretch=1)
+        #main_layout.addWidget(image_label, stretch=2)
+        
+        page.setLayout(main_layout)
         self.stacked_widget.addWidget(page)
+        
+        # Методы для работы с матрицей
+    def create_matrix_inputs(self, size):
+        """Создает поля ввода для матрицы указанного размера с индексами"""
+        # Очищаем старые поля
+        for i in reversed(range(self.matrix_grid_layout.count())):
+            widget = self.matrix_grid_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        
+        self.matrix_inputs.clear()
+        
+        # Размеры ячеек (в пикселях)
+        CELL_WIDTH = 70
+        CELL_HEIGHT = 30
+        HEADER_COL_WIDTH = CELL_WIDTH  # Заголовки столбцов должны быть такой же ширины, как ячейки
+        HEADER_ROW_WIDTH = 80
+        HEADER_HEIGHT = 30
+        
+        # Сбрасываем все растягивания - используем фиксированные размеры
+        for i in range(self.matrix_grid_layout.columnCount()):
+            self.matrix_grid_layout.setColumnStretch(i, 0)
+            self.matrix_grid_layout.setColumnMinimumWidth(i, 0)
+        for i in range(self.matrix_grid_layout.rowCount()):
+            self.matrix_grid_layout.setRowStretch(i, 0)
+            self.matrix_grid_layout.setRowMinimumHeight(i, 0)
+        
+        # Устанавливаем размеры для заголовка строк (столбец 0)
+        self.matrix_grid_layout.setColumnMinimumWidth(0, HEADER_ROW_WIDTH)
+        
+        # Создаем заголовки столбцов (сверху)
+        for j in range(size):
+            label_col = QLabel(f"Столбец {j+1}")
+            label_col.setAlignment(Qt.AlignCenter)
+            label_col.setStyleSheet("font-weight: bold; background-color: #e0e0e0; padding: 2px;")
+            label_col.setFixedSize(HEADER_COL_WIDTH, HEADER_HEIGHT)
+            label_col.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            self.matrix_grid_layout.addWidget(label_col, 0, j+1, alignment=Qt.AlignCenter)
+            # Устанавливаем фиксированную ширину для столбцов данных (совпадает с шириной заголовка)
+            self.matrix_grid_layout.setColumnMinimumWidth(j+1, CELL_WIDTH)
+            self.matrix_grid_layout.setColumnStretch(j+1, 0)  # Не растягиваем столбцы
+        
+        # Устанавливаем высоту для заголовка столбцов (строка 0)
+        self.matrix_grid_layout.setRowMinimumHeight(0, HEADER_HEIGHT)
+        
+        # Создаем заголовки строк (слева)
+        for i in range(size):
+            label_row = QLabel(f"Строка {i+1}")
+            label_row.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            label_row.setStyleSheet("font-weight: bold; background-color: #e0e0e0; padding: 3px;")
+            label_row.setFixedSize(HEADER_ROW_WIDTH, CELL_HEIGHT)
+            label_row.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+            self.matrix_grid_layout.addWidget(label_row, i+1, 0)
+            # Устанавливаем минимальную высоту для строк данных
+            self.matrix_grid_layout.setRowMinimumHeight(i+1, CELL_HEIGHT)
+        
+        # Создаем поля ввода (с учетом смещения из-за заголовков)
+        for i in range(size):
+            row_inputs = []
+            for j in range(size):
+                line_edit = QLineEdit()
+                line_edit.setFixedSize(CELL_WIDTH, CELL_HEIGHT)
+                line_edit.setAlignment(Qt.AlignCenter)
+                line_edit.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+                
+                # Валидатор для неотрицательных чисел
+                from PySide6.QtGui import QDoubleValidator
+                validator = QDoubleValidator(0, 999999.99, 2)
+                line_edit.setValidator(validator)
+                
+                # Устанавливаем значение по умолчанию
+                if i == j:
+                    line_edit.setText("0")
+                else:
+                    line_edit.setText("1")
+                
+                # Добавляем с учетом заголовков (i+1, j+1) с выравниванием по центру
+                self.matrix_grid_layout.addWidget(line_edit, i+1, j+1, alignment=Qt.AlignCenter)
+                row_inputs.append(line_edit)
+            
+            self.matrix_inputs.append(row_inputs)
+        
+        # Обновляем размер контейнера на основе размера матрицы
+        # Вычисляем общий размер матрицы
+        margins = self.matrix_grid_layout.contentsMargins()
+        total_width = HEADER_ROW_WIDTH + (size * CELL_WIDTH) + (self.matrix_grid_layout.spacing() * (size + 1)) + margins.left() + margins.right()
+        total_height = HEADER_HEIGHT + (size * CELL_HEIGHT) + (self.matrix_grid_layout.spacing() * (size + 1)) + margins.top() + margins.bottom()
+        
+        # Устанавливаем минимальный размер контейнера
+        self.matrix_container.setMinimumSize(total_width, total_height)
+        # Обновляем геометрию контейнера
+        self.matrix_container.adjustSize()
+        self.matrix_container.updateGeometry()
+
+    def update_matrix_display(self):
+        """Обновляет отображение матрицы при изменении размера"""
+        size = self.matrix_size_spin.value()
+        self.create_matrix_inputs(size)
+
+    def get_matrix_data(self):
+        """Возвращает данные матрицы как numpy array"""
+        try:
+            import numpy as np
+            size = self.matrix_size_spin.value()
+            matrix = []
+            
+            for i in range(size):
+                row = []
+                for j in range(size):
+                    text = self.matrix_inputs[i][j].text()
+                    if text:
+                        row.append(float(text))
+                    else:
+                        row.append(0.0)
+                matrix.append(row)
+            
+            return np.array(matrix)
+        except Exception as e:
+            print(f"Ошибка получения данных матрицы: {e}")
+            return None
+
+    def get_integer_from_line_edit_and_matrix(self):
+        matrix = self.get_matrix_data()
+        a = algo(matrix)
+        print(a.Munkres_Alg())
+        x, y = a.Munkres_Alg()
+        print(f"total Munkres_Alg {x}")
+        x, y = a.Greedy()
+        print(f"total Greedy {x}")
+        x, y = a.Thrifty()
+        print(f"total Thrifty{x}")
+        x, y = a.Greedy_Thrifty()
+        print(f"total Greedy_Thrifty {x}")
+        x, y = a.Thrifty_Greedy()
+        print(f"total Thrifty_Greedy {x}")
+
 
     def create_third_page(self):
         """Третья страница"""
