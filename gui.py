@@ -9,7 +9,7 @@ import numpy as np
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Навигация между страницами")
+        self.setWindowTitle("Система поддержки принятия решений")
         self.setGeometry(100, 100, 800, 600)
 
         # Создаем StackedWidget как центральный виджет
@@ -27,27 +27,112 @@ class MainWindow(QMainWindow):
     def create_main_page(self):
         """Главная страница (меню)"""
         page = QWidget()
-        layout = QVBoxLayout()
-
+        
+        # Основной layout с двумя колонками
+        main_layout = QHBoxLayout(page)
+        main_layout.setSpacing(20)  # Расстояние между кнопками
+        main_layout.setContentsMargins(30, 30, 30, 30)  # Отступы от краев
+        
         title = QLabel("Главное меню")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 24px; font-weight: bold; margin: 20px;")
-
-        btn_to_page2 = QPushButton("Перейти на страницу ручного режима")
-        btn_to_page2.clicked.connect(lambda: self.go_to_page(1))
-        btn_to_page2.setMinimumHeight(50)
-
-        btn_to_page3 = QPushButton("Перейти на страницу эксперементального режима")
-        btn_to_page3.clicked.connect(lambda: self.go_to_page(2))
-        btn_to_page3.setMinimumHeight(50)
-
-        layout.addWidget(title)
-        layout.addStretch()
-        layout.addWidget(btn_to_page2)
-        layout.addWidget(btn_to_page3)
-        layout.addStretch()
-
-        page.setLayout(layout)
+        title.setStyleSheet("font-size: 32px; font-weight: bold; margin-bottom: 40px; color: #2c3e50;")
+        
+        # Создаем контейнер для заголовка и кнопок
+        container = QWidget()
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+        
+        # Добавляем заголовок
+        container_layout.addWidget(title)
+        container_layout.addSpacing(50)  # Отступ между заголовком и кнопками
+        
+        # Создаем контейнер для кнопок
+        buttons_container = QWidget()
+        buttons_layout = QHBoxLayout(buttons_container)
+        buttons_layout.setSpacing(40)  # Расстояние между кнопками
+        buttons_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Левая кнопка (Ручной режим)
+        btn_left_container = QWidget()
+        left_layout = QVBoxLayout(btn_left_container)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        
+        btn_left = QPushButton("Ручной\nрежим")
+        btn_left.setObjectName("leftButton")
+        btn_left.clicked.connect(lambda: self.go_to_page(1))
+        
+        # Делаем кнопку квадратной и крупной
+        btn_left.setFixedSize(250, 250)  # Квадратная кнопка
+        btn_left.setStyleSheet("""
+            QPushButton#leftButton {
+                font-size: 26px;
+                font-weight: bold;
+                color: white;
+                background-color: #91B081;
+                border: 4px solid #87A878;
+                border-radius: 20px;
+                padding: 20px;
+            }
+            QPushButton#leftButton:hover {
+                background-color: #5dade2;
+                border-color: #3498db;
+            }
+            QPushButton#leftButton:pressed {
+                background-color: #2980b9;
+                border-color: #1c5a7a;
+            }
+        """)
+        btn_left.setCursor(Qt.PointingHandCursor)
+        
+        left_layout.addWidget(btn_left, 0, Qt.AlignCenter)
+        buttons_layout.addWidget(btn_left_container, 1)
+        
+        # Правая кнопка (Экспериментальный режим)
+        btn_right_container = QWidget()
+        right_layout = QVBoxLayout(btn_right_container)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        
+        btn_right = QPushButton("Режим\nэксперимента")
+        btn_right.setObjectName("rightButton")
+        btn_right.clicked.connect(lambda: self.go_to_page(2))
+        
+        # Делаем кнопку квадратной и крупной
+        btn_right.setFixedSize(250, 250)  # Квадратная кнопка
+        btn_right.setStyleSheet("""
+            QPushButton#rightButton {
+                font-size: 26px;
+                font-weight: bold;
+                color: white;
+                background-color: #ffa500;
+                border: 4px solid #c0392b;
+                border-radius: 20px;
+                padding: 20px;
+            }
+            QPushButton#rightButton:hover {
+                background-color: #ec7063;
+                border-color: #e74c3c;
+            }
+            QPushButton#rightButton:pressed {
+                background-color: #c0392b;
+                border-color: #922b21;
+            }
+        """)
+        btn_right.setCursor(Qt.PointingHandCursor)
+        
+        right_layout.addWidget(btn_right, 0, Qt.AlignCenter)
+        buttons_layout.addWidget(btn_right_container, 1)
+        
+        # Добавляем контейнер с кнопками в основной layout
+        container_layout.addWidget(buttons_container, 1)
+        container_layout.addStretch()
+        
+        # Центрируем контейнер на странице
+        main_layout.addStretch(1)
+        main_layout.addWidget(container, 2)
+        main_layout.addStretch(1)
+        
+        page.setLayout(main_layout)
         self.stacked_widget.addWidget(page)
 
     def create_second_page(self):
@@ -60,7 +145,7 @@ class MainWindow(QMainWindow):
 
         title = QLabel("Ручной режим")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 16px; font-weight: bold; margin: 5px;")
+        title.setStyleSheet("font-size: 26px; font-weight: bold; margin: 5px;")
 
         btn_back = QPushButton("← Назад в меню")
         btn_back.clicked.connect(lambda: self.go_to_page(0))
@@ -343,7 +428,6 @@ class MainWindow(QMainWindow):
 
         self.textOutput.setText(lineEditStr)
 
-
     def create_third_page(self):
         """Третья страница"""
         page = QWidget()
@@ -351,10 +435,11 @@ class MainWindow(QMainWindow):
 
         left_widget = QWidget()
         optionsLayout = QVBoxLayout(left_widget)
+        optionsLayout.setSpacing(15)
 
-        title = QLabel("Страница 3")
+        title = QLabel("Экспериментальный режим")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 24px; font-weight: bold; margin: 20px;")
+        title.setStyleSheet("font-size: 28px; font-weight: bold; margin: 10px; color: #2c3e50;")
 
         btn_back = QPushButton("← Назад")
         btn_back.clicked.connect(lambda: self.go_to_page(1))
@@ -362,60 +447,120 @@ class MainWindow(QMainWindow):
         btn_home = QPushButton("В главное меню")
         btn_home.clicked.connect(lambda: self.go_to_page(0))
 
+        # Количество экспериментов
         self.number_of_experminets = QLineEdit("5", self)
         self.number_of_experminets.setPlaceholderText("Введите число экспериментов")
+        self.number_of_experminets.setStyleSheet("font-size: 14px; padding: 8px;")
         self.number_of_experminets.setValidator(QIntValidator(0, 100, self))
 
-        self.alpha_min = QLineEdit("0.1", self)
-        self.alpha_min.setPlaceholderText("alpha min")
-        self.alpha_min.setValidator(QDoubleValidator(self))
-
-        self.alpha_max = QLineEdit("0.3", self)
-        self.alpha_max.setPlaceholderText("alpha max")
-        self.alpha_max.setValidator(QDoubleValidator(self))
-
-        self.beta_min = QLineEdit("0.1", self)
-        self.beta_min.setPlaceholderText("beta min")
-        self.beta_min.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
-        
-        self.beta_max = QLineEdit("0.3", self)
-        self.beta_max.setPlaceholderText("beta max")
-        self.beta_max.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
-
+                # Размер матрицы
         self.matrix_size = QLineEdit("3", self)
         self.matrix_size.setPlaceholderText("matrix_size")
+        self.matrix_size.setStyleSheet("font-size: 14px; padding: 8px;")
         self.matrix_size.setValidator(QIntValidator(1, 16, self))
 
+        # Создаем компактный layout для alpha и beta
+        alpha_beta_group = QGroupBox("Параметры")
+        alpha_beta_layout = QVBoxLayout(alpha_beta_group)
+        
+        # Создаем таблицу для alpha
+        alpha_widget = QWidget()
+        alpha_grid = QGridLayout(alpha_widget)
+        alpha_grid.setSpacing(10)
+        alpha_grid.setContentsMargins(5, 5, 5, 5)
+        
+        alpha_label = QLabel("Сахаристость:")
+        alpha_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        alpha_grid.addWidget(alpha_label, 0, 0, 1, 2)
+        
+        alpha_min_label = QLabel("min:")
+        alpha_min_label.setStyleSheet("font-size: 13px;")
+        alpha_grid.addWidget(alpha_min_label, 1, 0)
+        
+        self.alpha_min = QLineEdit("0.1", self)
+        self.alpha_min.setPlaceholderText("min")
+        self.alpha_min.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.alpha_min.setValidator(QDoubleValidator(self))
+        self.alpha_min.setMaximumWidth(100)
+        alpha_grid.addWidget(self.alpha_min, 1, 1)
+        
+        alpha_max_label = QLabel("max:")
+        alpha_max_label.setStyleSheet("font-size: 13px;")
+        alpha_grid.addWidget(alpha_max_label, 2, 0)
+        
+        self.alpha_max = QLineEdit("0.3", self)
+        self.alpha_max.setPlaceholderText("max")
+        self.alpha_max.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.alpha_max.setValidator(QDoubleValidator(self))
+        self.alpha_max.setMaximumWidth(100)
+        alpha_grid.addWidget(self.alpha_max, 2, 1)
+        
+        # Создаем таблицу для beta
+        beta_widget = QWidget()
+        beta_grid = QGridLayout(beta_widget)
+        beta_grid.setSpacing(10)
+        beta_grid.setContentsMargins(5, 5, 5, 5)
+        
+        beta_label = QLabel("Коэффициент деградации:")
+        beta_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        beta_grid.addWidget(beta_label, 0, 0, 1, 2)
+        
+        beta_min_label = QLabel("         min:")
+        beta_min_label.setStyleSheet("font-size: 13px;")
+        beta_grid.addWidget(beta_min_label, 1, 0)
+        
+        self.beta_min = QLineEdit("0.1", self)
+        self.beta_min.setPlaceholderText("    min")
+        self.beta_min.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.beta_min.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
+        self.beta_min.setMaximumWidth(100)
+        beta_grid.addWidget(self.beta_min, 1, 1)
+        
+        beta_max_label = QLabel("         max:")
+        beta_max_label.setStyleSheet("font-size: 13px;")
+        beta_grid.addWidget(beta_max_label, 2, 0)
+        
+        self.beta_max = QLineEdit("0.3", self)
+        self.beta_max.setPlaceholderText("    max")
+        self.beta_max.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.beta_max.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
+        self.beta_max.setMaximumWidth(100)
+        beta_grid.addWidget(self.beta_max, 2, 1)
+        
+        # Горизонтальный layout для alpha и beta
+        params_horizontal = QHBoxLayout()
+        params_horizontal.addWidget(alpha_widget)
+        params_horizontal.addWidget(beta_widget)
+        params_horizontal.addStretch()
+        
+        alpha_beta_layout.addLayout(params_horizontal)
+
         radio_buttons_layout = QHBoxLayout()
-        self.concentrated = QRadioButton("concentrated", self)
-        self.uniform = QRadioButton("uniform", self)
+        self.concentrated = QRadioButton("Концентрированное", self)
+        self.concentrated.setStyleSheet("font-size: 14px;")
+        self.uniform = QRadioButton("Равномерное", self)
+        self.uniform.setStyleSheet("font-size: 14px;")
         radio_buttons_layout.addWidget(self.concentrated)
         radio_buttons_layout.addWidget(self.uniform)
         
-        gb = QGroupBox("sugar😎")
+        gb = QGroupBox("Распределение😎")
         gb.setLayout(radio_buttons_layout)
 
         self.line_button = QPushButton("Получить результаты эксперимента", self)
         self.line_button.clicked.connect(self.get_integer_from_line_edit)
-
-        self.result_label = QLabel("Result: ", self)
         
         ######################SVEKLA########################
         image_label = QLabel()
         try:
-            # Загружаем картинку
             pixmap = QPixmap('svekla.jpg')
             if pixmap.isNull():
-                # Если картинка не загрузилась, создаем заглушку
                 pixmap = QPixmap(400, 400)
-                pixmap.fill(Qt.red)  # Красный фон
+                pixmap.fill(Qt.red)
                 image_label.setText("Картинка не найдена")
                 image_label.setAlignment(Qt.AlignCenter)
             else:
-                # Масштабируем картинку, если нужно
                 image_label.setPixmap(pixmap.scaled(600, 600, Qt.KeepAspectRatio, Qt.SmoothTransformation))
         except Exception as e:
-            # Если произошла ошибка при загрузке
             pixmap = QPixmap(300, 300)
             pixmap.fill(Qt.gray)
             image_label.setPixmap(pixmap)
@@ -426,27 +571,31 @@ class MainWindow(QMainWindow):
         image_label.setStyleSheet("border: 1px solid #ccc; padding: 10px;")
         ####################################################
 
-        #колво экспериментов, альфа мин макс, бета мин макс, размер матрицы, концетрированое/равномерное распределение сахаристости
+        # Собираем элементы в layout
         optionsLayout.addWidget(title)
         optionsLayout.addStretch()
-        optionsLayout.addWidget(QLabel("Это страница эксперементального режима"))
-
-        optionsLayout.addWidget(QLabel("Количество экспериментов:"))
+        
+        # Количество экспериментов
+        exp_label = QLabel("Количество экспериментов:")
+        exp_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        optionsLayout.addWidget(exp_label)
         optionsLayout.addWidget(self.number_of_experminets)
-        optionsLayout.addWidget(QLabel("Alpha min:"))
-        optionsLayout.addWidget(self.alpha_min)
-        optionsLayout.addWidget(QLabel("Alpha max:"))
-        optionsLayout.addWidget(self.alpha_max)
-        optionsLayout.addWidget(QLabel("Beta min:"))
-        optionsLayout.addWidget(self.beta_min)
-        optionsLayout.addWidget(QLabel("Beta max:"))
-        optionsLayout.addWidget(self.beta_max)
-        optionsLayout.addWidget(QLabel("Размер матрицы:"))
-        optionsLayout.addWidget(self.matrix_size)
-        optionsLayout.addWidget(gb)
 
+                # Размер матрицы
+        size_label = QLabel("Размер матрицы:")
+        size_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        optionsLayout.addWidget(size_label)
+        optionsLayout.addWidget(self.matrix_size)
+        
+        # Alpha и Beta параметры
+        optionsLayout.addWidget(alpha_beta_group)
+                
+        # Распределение
+        optionsLayout.addWidget(gb)
+        
+        # Кнопка и результат
         optionsLayout.addWidget(self.line_button)
-        optionsLayout.addWidget(self.result_label)
+        #optionsLayout.addWidget(self.result_label)
         optionsLayout.addStretch()
 
         # Кнопки навигации
