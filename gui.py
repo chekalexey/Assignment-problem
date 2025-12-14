@@ -1,10 +1,152 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
-                              QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy, QTextEdit)
+                              QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy, QTextEdit, QTabWidget)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette, QColor, QFont)
+from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette, QPainter, QPen, QColor, QFont)
 from matgen import *
 import sys
 import numpy as np
+
+# ================== ДОБАВЛЕН КЛАСС ДЛЯ ГИСТОГРАММЫ ==================
+class HistogramWidget(QWidget):
+    """Виджет для отображения гистограммы"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.results = {}
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setMinimumSize(500, 400)
+        self.setStyleSheet("border: 1px solid #ccc; background-color: white;")
+        
+    def update_results(self, results):
+        self.results = results
+        self.update()
+        
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        painter.fillRect(self.rect(), Qt.white)
+        
+        if not self.results:
+            painter.setPen(QColor(100, 100, 100))
+            font = QFont("Arial", 12)
+            painter.setFont(font)
+            painter.drawText(self.rect(), Qt.AlignCenter, "Запустите эксперимент\nдля отображения гистограммы")
+            return
+        
+        margin = 60
+        plot_width = self.width() - 2 * margin
+        plot_height = self.height() - 2 * margin
+        plot_x = margin
+        plot_y = margin
+        
+        if plot_width <= 0 or plot_height <= 0:
+            return
+        
+        # Оси
+        painter.setPen(QPen(Qt.black, 2))
+        painter.drawLine(plot_x, plot_y, plot_x, plot_y + plot_height)
+        painter.drawLine(plot_x, plot_y + plot_height, plot_x + plot_width, plot_y + plot_height)
+        
+        # Данные
+        strategies = list(self.results.keys())
+        values = list(self.results.values())
+        num_strategies = len(strategies)
+        
+        if num_strategies == 0:
+            return
+        
+        max_val = max(values)
+        min_val = min(values)
+        
+        if min_val > 0:
+            display_min = 0
+            display_max = max_val * 1.1 if max_val > 0 else 0.1
+        else:
+            val_range = max_val - min_val
+            padding = val_range * 0.1 if val_range > 0 else 0.1
+            display_min = min_val - padding
+            display_max = max_val + padding
+        
+        display_range = display_max - display_min
+        if display_range == 0:
+            display_range = 1
+        
+        # Сетка
+        painter.setPen(QPen(QColor(200, 200, 200), 1))
+        num_grid_lines = 5
+        
+        for i in range(num_grid_lines + 1):
+            y = plot_y + plot_height - (i * plot_height / num_grid_lines)
+            painter.drawLine(plot_x, y, plot_x + plot_width, y)
+            
+            value = display_min + (i * display_range / num_grid_lines)
+            value_text = f"{value:.3f}"
+            
+            painter.setPen(Qt.black)
+            font = QFont("Arial", 9)
+            painter.setFont(font)
+            text_width = painter.fontMetrics().horizontalAdvance(value_text)
+            painter.drawText(plot_x - text_width - 10, y + 5, value_text)
+            painter.setPen(QPen(QColor(200, 200, 200), 1))
+        
+        # Столбцы
+        bar_width = min(80, plot_width / (num_strategies * 1.5))
+        spacing = (plot_width - num_strategies * bar_width) / (num_strategies + 1)
+        
+        colors = [
+            QColor(255, 99, 71),    # Красный
+            QColor(30, 144, 255),   # Синий
+            QColor(50, 205, 50),    # Зеленый
+            QColor(255, 215, 0),    # Желтый
+            QColor(138, 43, 226),   # Фиолетовый
+            QColor(255, 165, 0)     # Оранжевый
+        ]
+        
+        for i, (strategy, value) in enumerate(self.results.items()):
+            if display_min == 0:
+                normalized_height = value / display_max
+            else:
+                normalized_height = (value - display_min) / display_range
+            
+            normalized_height = max(0, min(1, normalized_height))
+            bar_height = normalized_height * plot_height
+            
+            x = plot_x + spacing + i * (bar_width + spacing)
+            y = plot_y + plot_height - bar_height
+            
+            color = colors[i % len(colors)]
+            darker_color = color.darker(120)
+            
+            painter.setBrush(color)
+            painter.setPen(QPen(darker_color, 1))
+            painter.drawRect(int(x), int(y), int(bar_width), int(bar_height))
+            
+            # Подпись значения
+            painter.setPen(Qt.black)
+            value_text = f"{value:.3f}"
+            font = QFont("Arial", 9, QFont.Bold)
+            painter.setFont(font)
+            text_width = painter.fontMetrics().horizontalAdvance(value_text)
+            
+            text_y = y - 10
+            if text_y < plot_y:
+                text_y = y + 20
+                painter.setPen(Qt.white)
+            
+            painter.drawText(int(x + bar_width/2 - text_width/2), int(text_y), value_text)
+            
+            painter.setPen(Qt.black)
+            
+            # Подпись стратегии
+            strategy_text = strategy.replace('-', '\n')
+            lines = strategy_text.split('\n')
+            font = QFont("Arial", 8, QFont.Bold)
+            painter.setFont(font)
+            for j, line in enumerate(lines):
+                line_width = painter.fontMetrics().horizontalAdvance(line)
+                painter.drawText(int(x + bar_width/2 - line_width/2),
+                               int(plot_y + plot_height + 20 + j*15), line)
+# ================== КОНЕЦ КЛАССА ДЛЯ ГИСТОГРАММЫ ==================
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -383,7 +525,8 @@ class MainWindow(QMainWindow):
                 for j in range(size):
                     text = self.matrix_inputs[i][j].text()
                     if text:
-                        row.append(float(text))
+                        # Заменяем запятую на точку для корректного парсинга
+                        row.append(float(text.replace(',', '.')))
                     else:
                         row.append(0.0)
                 matrix.append(row)
@@ -407,8 +550,12 @@ class MainWindow(QMainWindow):
         a = algo(matrix)
 
         x, y = a.Munkres_Alg()
-        lineEditStr += f"total Munkres_Alg {x} {y}\n"
-        print(f"total Munkres_Alg {x} {y}")
+        lineEditStr += f"total Munkres_Alg (Min) {x} {y}\n"
+        print(f"total Munkres_Alg (Min) {x} {y}")
+
+        x, y = a.Munkres_Alg_Max()
+        lineEditStr += f"total Munkres_Alg_Max (Max) {x} {y}\n"
+        print(f"total Munkres_Alg_Max (Max) {x} {y}")
 
         x, y = a.Greedy()
         lineEditStr += f"total Greedy {x} {y}\n"
@@ -481,7 +628,20 @@ class MainWindow(QMainWindow):
         self.alpha_min = QLineEdit("0.1", self)
         self.alpha_min.setPlaceholderText("min")
         self.alpha_min.setStyleSheet("font-size: 18px; padding: 8px;")
-        self.alpha_min.setValidator(QDoubleValidator(self))
+        # Настраиваем валидатор для использования точки как десятичного разделителя
+        alpha_min_validator = QDoubleValidator(self)
+        alpha_min_validator.setNotation(QDoubleValidator.StandardNotation)
+        self.alpha_min.setValidator(alpha_min_validator)
+        # Заменяем запятую на точку при вводе (с проверкой чтобы избежать бесконечного цикла)
+        def replace_comma_alpha_min(text):
+            if ',' in text:
+                cursor_pos = self.alpha_min.cursorPosition()
+                new_text = text.replace(',', '.')
+                self.alpha_min.blockSignals(True)
+                self.alpha_min.setText(new_text)
+                self.alpha_min.setCursorPosition(cursor_pos)
+                self.alpha_min.blockSignals(False)
+        self.alpha_min.textChanged.connect(replace_comma_alpha_min)
         self.alpha_min.setMaximumWidth(100)
         alpha_grid.addWidget(self.alpha_min, 1, 1)
         
@@ -492,7 +652,20 @@ class MainWindow(QMainWindow):
         self.alpha_max = QLineEdit("0.3", self)
         self.alpha_max.setPlaceholderText("max")
         self.alpha_max.setStyleSheet("font-size: 18px; padding: 8px;")
-        self.alpha_max.setValidator(QDoubleValidator(self))
+        # Настраиваем валидатор для использования точки как десятичного разделителя
+        alpha_max_validator = QDoubleValidator(self)
+        alpha_max_validator.setNotation(QDoubleValidator.StandardNotation)
+        self.alpha_max.setValidator(alpha_max_validator)
+        # Заменяем запятую на точку при вводе (с проверкой чтобы избежать бесконечного цикла)
+        def replace_comma_alpha_max(text):
+            if ',' in text:
+                cursor_pos = self.alpha_max.cursorPosition()
+                new_text = text.replace(',', '.')
+                self.alpha_max.blockSignals(True)
+                self.alpha_max.setText(new_text)
+                self.alpha_max.setCursorPosition(cursor_pos)
+                self.alpha_max.blockSignals(False)
+        self.alpha_max.textChanged.connect(replace_comma_alpha_max)
         self.alpha_max.setMaximumWidth(100)
         alpha_grid.addWidget(self.alpha_max, 2, 1)
         
@@ -513,7 +686,20 @@ class MainWindow(QMainWindow):
         self.beta_min = QLineEdit("0.1", self)
         self.beta_min.setPlaceholderText("    min")
         self.beta_min.setStyleSheet("font-size: 18px; padding: 8px;")
-        self.beta_min.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
+        # Настраиваем валидатор для использования точки как десятичного разделителя
+        beta_min_validator = QDoubleValidator(0.00001, 0.99999, 5, self)
+        beta_min_validator.setNotation(QDoubleValidator.StandardNotation)
+        self.beta_min.setValidator(beta_min_validator)
+        # Заменяем запятую на точку при вводе (с проверкой чтобы избежать бесконечного цикла)
+        def replace_comma_beta_min(text):
+            if ',' in text:
+                cursor_pos = self.beta_min.cursorPosition()
+                new_text = text.replace(',', '.')
+                self.beta_min.blockSignals(True)
+                self.beta_min.setText(new_text)
+                self.beta_min.setCursorPosition(cursor_pos)
+                self.beta_min.blockSignals(False)
+        self.beta_min.textChanged.connect(replace_comma_beta_min)
         self.beta_min.setMaximumWidth(100)
         beta_grid.addWidget(self.beta_min, 1, 1)
         
@@ -524,7 +710,20 @@ class MainWindow(QMainWindow):
         self.beta_max = QLineEdit("0.3", self)
         self.beta_max.setPlaceholderText("    max")
         self.beta_max.setStyleSheet("font-size: 18px; padding: 8px;")
-        self.beta_max.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
+        # Настраиваем валидатор для использования точки как десятичного разделителя
+        beta_max_validator = QDoubleValidator(0.00001, 0.99999, 5, self)
+        beta_max_validator.setNotation(QDoubleValidator.StandardNotation)
+        self.beta_max.setValidator(beta_max_validator)
+        # Заменяем запятую на точку при вводе (с проверкой чтобы избежать бесконечного цикла)
+        def replace_comma_beta_max(text):
+            if ',' in text:
+                cursor_pos = self.beta_max.cursorPosition()
+                new_text = text.replace(',', '.')
+                self.beta_max.blockSignals(True)
+                self.beta_max.setText(new_text)
+                self.beta_max.setCursorPosition(cursor_pos)
+                self.beta_max.blockSignals(False)
+        self.beta_max.textChanged.connect(replace_comma_beta_max)
         self.beta_max.setMaximumWidth(100)
         beta_grid.addWidget(self.beta_max, 2, 1)
         
@@ -548,29 +747,13 @@ class MainWindow(QMainWindow):
         gb.setLayout(radio_buttons_layout)
 
         self.line_button = QPushButton("Получить результаты", self)
-        self.line_button.clicked.connect(self.get_integer_from_line_edit)
+        self.line_button.clicked.connect(self.run_experiment)  # Изменено на run_experiment для вывода в GUI
         
-        ######################SVEKLA########################
-        image_label = QLabel()
-        try:
-            pixmap = QPixmap('svekla.jpg')
-            if pixmap.isNull():
-                pixmap = QPixmap(400, 400)
-                pixmap.fill(Qt.red)
-                image_label.setText("Картинка не найдена")
-                image_label.setAlignment(Qt.AlignCenter)
-            else:
-                image_label.setPixmap(pixmap.scaled(600, 600, Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        except Exception as e:
-            pixmap = QPixmap(300, 300)
-            pixmap.fill(Qt.gray)
-            image_label.setPixmap(pixmap)
-            image_label.setText(f"Ошибка: {str(e)}")
-            image_label.setAlignment(Qt.AlignCenter)
-            image_label.setWordWrap(True)
-        image_label.setAlignment(Qt.AlignCenter)
-        image_label.setStyleSheet("border: 1px solid #ccc; padding: 10px;")
-        ####################################################
+        # Текстовое поле для результатов слева (новая функция из test.py)
+        self.results_text_left = QTextEdit()
+        self.results_text_left.setReadOnly(True)
+        self.results_text_left.setPlaceholderText("Здесь появятся результаты после запуска эксперимента")
+        self.results_text_left.setMinimumHeight(150)
 
         # Собираем элементы в layout
         optionsLayout.addWidget(title)
@@ -594,6 +777,8 @@ class MainWindow(QMainWindow):
         
         # Кнопка и результат
         optionsLayout.addWidget(self.line_button)
+        optionsLayout.addWidget(QLabel("Краткие результаты:"))
+        optionsLayout.addWidget(self.results_text_left)
         #optionsLayout.addWidget(self.result_label)
         optionsLayout.addStretch()
 
@@ -603,8 +788,38 @@ class MainWindow(QMainWindow):
         button_layout.addWidget(btn_home)
         optionsLayout.addLayout(button_layout)
 
+        # ================== ДОБАВЛЕНЫ ВКЛАДКИ С ГРАФИКАМИ ==================
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        
+        # Создаем вкладки
+        self.tab_widget = QTabWidget()
+        
+        # Вкладка 1: Гистограмма
+        self.histogram_tab = QWidget()
+        histogram_layout = QVBoxLayout(self.histogram_tab)
+        self.histogram_widget = HistogramWidget()
+        histogram_layout.addWidget(self.histogram_widget)
+        
+        # Вкладка 2: Полные результаты
+        self.results_tab = QWidget()
+        results_layout = QVBoxLayout(self.results_tab)
+        
+        # Текстовое поле для полных результатов
+        self.results_text_right = QTextEdit()
+        self.results_text_right.setReadOnly(True)
+        self.results_text_right.setPlaceholderText("Полные результаты появятся здесь после запуска эксперимента")
+        results_layout.addWidget(self.results_text_right)
+        
+        # Добавляем вкладки
+        self.tab_widget.addTab(self.histogram_tab, "Гистограмма")
+        self.tab_widget.addTab(self.results_tab, "Полные результаты")
+        
+        right_layout.addWidget(self.tab_widget)
+        # ================== КОНЕЦ ВКЛАДОК С ГРАФИКАМИ ==================
+
         main_layout.addWidget(left_widget, stretch=1)
-        main_layout.addWidget(image_label, stretch=2)
+        main_layout.addWidget(right_widget, stretch=2)
 
         page.setLayout(main_layout)
         self.stacked_widget.addWidget(page)
@@ -615,18 +830,20 @@ class MainWindow(QMainWindow):
 
     def get_integer_from_line_edit(self):
             number_of_experminets = int(self.number_of_experminets.text())
-            alpha_min = float(self.alpha_min.text())
-            alpha_max = float(self.alpha_max.text())
-            beta_min = float(self.beta_min.text())
-            beta_max = float(self.beta_max.text())
+            # Заменяем запятую на точку для корректного парсинга
+            alpha_min = float(self.alpha_min.text().replace(',', '.'))
+            alpha_max = float(self.alpha_max.text().replace(',', '.'))
+            beta_min = float(self.beta_min.text().replace(',', '.'))
+            beta_max = float(self.beta_max.text().replace(',', '.'))
             matrix_size = int(self.matrix_size.text())
             sugar = ""
             if self.concentrated.isChecked():
-                sugar = self.concentrated.text()
+                sugar = "concentrated"  # Английское название
             elif self.uniform.isChecked():
-                sugar = self.uniform.text()
+                sugar = "uniform"  # Английское название
 
             sumMunkresAlg = 0
+            sumMunkresAlgMax = 0
             sumGreedy = 0
             sumThrifty = 0
             sumGreedyThrifty = 0
@@ -638,6 +855,7 @@ class MainWindow(QMainWindow):
                 print(thingie.D_matrix)
                 a = algo(thingie.D_matrix)
                 print(a.Munkres_Alg())
+                print(a.Munkres_Alg_Max())
                 print(a.Greedy())
                 print(a.Thrifty())
                 print(a.Greedy_Thrifty(matrix_size//2))
@@ -645,6 +863,8 @@ class MainWindow(QMainWindow):
                 #x += a.Greedy()[0]
                 x, y = a.Munkres_Alg()
                 sumMunkresAlg += x
+                x, y = a.Munkres_Alg_Max()
+                sumMunkresAlgMax += x
                 x, y = a.Greedy()
                 sumGreedy += x
                 x, y = a.Thrifty()
@@ -656,12 +876,205 @@ class MainWindow(QMainWindow):
                 
                 print("------------------------------------------")
             print(f"total sumMunkresAlg {sumMunkresAlg}")
+            print(f"total sumMunkresAlgMax {sumMunkresAlgMax}")
             print(f"total sumGreedy {sumGreedy}")
             print(f"total sumThrifty {sumThrifty}")
             print(f"total sumGreedyThrifty {sumGreedyThrifty}")
             print(f"total sumThriftyGreedy {sumThriftyGreedy}")
             # print(sugar)
             # print(number_of_experminets, alpha_min, alpha_max, beta_min, beta_max, matrix_size)
+
+    def run_experiment(self):
+        """Новый метод для запуска эксперимента с выводом результатов в GUI (из test.py)"""
+        try:
+            self.line_button.setEnabled(False)
+            self.line_button.setText("Выполняется...")
+            QApplication.processEvents()
+            
+            # Получаем значения (заменяем запятую на точку для корректного парсинга)
+            number_of_experiments = int(self.number_of_experminets.text())
+            alpha_min = float(self.alpha_min.text().replace(',', '.'))
+            alpha_max = float(self.alpha_max.text().replace(',', '.'))
+            beta_min = float(self.beta_min.text().replace(',', '.'))
+            beta_max = float(self.beta_max.text().replace(',', '.'))
+            matrix_size = int(self.matrix_size.text())
+            sugar = "uniform"
+            if self.concentrated.isChecked():
+                sugar = "concentrated"
+            elif self.uniform.isChecked():
+                sugar = "uniform"
+
+            # Проверяем корректность
+            if alpha_min >= alpha_max:
+                raise ValueError("Alpha min должен быть меньше Alpha max")
+            if beta_min >= beta_max:
+                raise ValueError("Beta min должен быть меньше Beta max")
+
+            sumMunkresAlg = 0
+            sumMunkresAlgMax = 0
+            sumGreedy = 0
+            sumThrifty = 0
+            sumGreedyThrifty = 0
+            sumThriftyGreedy = 0
+
+            # Запускаем эксперименты
+            for i in range(number_of_experiments):
+                thingie = MatrixGenerator(
+                    n=matrix_size, 
+                    v=matrix_size, 
+                    distribution_type=sugar, 
+                    a_min=alpha_min, 
+                    a_max=alpha_max, 
+                    beta_min=beta_min, 
+                    beta_max=beta_max
+                )
+                
+                a = algo(thingie.D_matrix)
+                
+                x, y = a.Munkres_Alg()
+                sumMunkresAlg += x
+                x, y = a.Munkres_Alg_Max()
+                sumMunkresAlgMax += x
+                x, y = a.Greedy()
+                sumGreedy += x
+                x, y = a.Thrifty()
+                sumThrifty += x
+                x, y = a.Greedy_Thrifty(matrix_size//2)
+                sumGreedyThrifty += x
+                x, y = a.Thrifty_Greedy(matrix_size//2)
+                sumThriftyGreedy += x
+            
+            # Вычисляем средние
+            avgMunkresAlg = sumMunkresAlg / number_of_experiments
+            avgMunkresAlgMax = sumMunkresAlgMax / number_of_experiments
+            avgGreedy = sumGreedy / number_of_experiments
+            avgThrifty = sumThrifty / number_of_experiments
+            avgGreedyThrifty = sumGreedyThrifty / number_of_experiments
+            avgThriftyGreedy = sumThriftyGreedy / number_of_experiments
+            
+            # Формируем результаты для гистограммы (включая оба алгоритма Munkres)
+            results_dict = {
+                'Munkres_Min': avgMunkresAlg,
+                'Munkres_Max': avgMunkresAlgMax,
+                'Greedy': avgGreedy,
+                'Thrifty': avgThrifty,
+                'Greedy-Thrifty': avgGreedyThrifty,
+                'Thrifty-Greedy': avgThriftyGreedy
+            }
+            
+            # Обновляем гистограмму
+            self.histogram_widget.update_results(results_dict)
+            
+            # ИДЕАЛЬНОЕ ЗНАЧЕНИЕ (Munkres_Max) как 100% - ИЗМЕНЕНИЕ ЗДЕСЬ
+            ideal_value = avgMunkresAlgMax
+            
+            # НАЙТИ ЛУЧШУЮ И ХУДШУЮ СТРАТЕГИИ (БЕЗ MUNKRES)
+            # Исключаем Munkres алгоритмы из сравнения
+            comparison_results = {
+                'Greedy': avgGreedy,
+                'Thrifty': avgThrifty,
+                'Greedy-Thrifty': avgGreedyThrifty,
+                'Thrifty-Greedy': avgThriftyGreedy
+            }
+            best_strategy = max(comparison_results, key=comparison_results.get)
+            worst_strategy = min(comparison_results, key=comparison_results.get)
+            best_value = comparison_results[best_strategy]
+            worst_value = comparison_results[worst_strategy]
+            
+            # Краткие результаты слева
+            short_text = f"""
+            <h3>Краткие результаты:</h3>
+            <p><b>Идеальное значение (Munkres_Max):</b> {ideal_value:.3f}</p>
+            <p><b>Лучшая стратегия (без Munkres):</b> {best_strategy}</p>
+            <p><b>Результат:</b> {best_value:.3f} ({best_value/ideal_value*100:.1f}% от идеала)</p>
+            <p><b>Худшая стратегия (без Munkres):</b> {worst_strategy}</p>
+            <p><b>Результат:</b> {worst_value:.3f} ({worst_value/ideal_value*100:.1f}% от идеала)</p>
+            <p><b>Разница:</b> {best_value - worst_value:.3f}</p>
+            """
+            self.results_text_left.setHtml(short_text)
+            
+            # Полные результаты справа (сравниваем с ideal_value - Munkres_Max)
+            full_text = f"""
+            <h2>ПОЛНЫЕ РЕЗУЛЬТАТЫ ЭКСПЕРИМЕНТА</h2>
+            
+            <h3>Параметры эксперимента:</h3>
+            <ul>
+                <li><b>Количество экспериментов:</b> {number_of_experiments}</li>
+                <li><b>Размер матрицы:</b> {matrix_size}×{matrix_size}</li>
+                <li><b>Тип распределения:</b> {sugar}</li>
+                <li><b>Alpha диапазон:</b> {alpha_min:.3f} - {alpha_max:.3f}</li>
+                <li><b>Beta диапазон:</b> {beta_min:.3f} - {beta_max:.3f}</li>
+            </ul>
+            
+            <h3>Результаты по стратегиям:</h3>
+            <p><b>Идеальное значение (Munkres_Max):</b> {ideal_value:.3f} (100%)</p>
+            <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+                <tr style="background-color: #f2f2f2;">
+                    <th>Стратегия</th>
+                    <th>Среднее значение</th>
+                    <th>% от идеала</th>
+                </tr>
+                <tr>
+                    <td><b>Венгерский алгоритм (Munkres Min)</b></td>
+                    <td>{avgMunkresAlg:.3f}</td>
+                    <td>{avgMunkresAlg/ideal_value*100:.1f}%</td>
+                </tr>
+                <tr>
+                    <td><b>Венгерский алгоритм (Munkres Max)</b></td>
+                    <td>{avgMunkresAlgMax:.3f}</td>
+                    <td><b>100.0%</b></td>
+                </tr>
+                <tr>
+                    <td><b>Жадная стратегия (Greedy)</b></td>
+                    <td>{avgGreedy:.3f}</td>
+                    <td>{avgGreedy/ideal_value*100:.1f}%</td>
+                </tr>
+                <tr>
+                    <td><b>Бережливая стратегия (Thrifty)</b></td>
+                    <td>{avgThrifty:.3f}</td>
+                    <td>{avgThrifty/ideal_value*100:.1f}%</td>
+                </tr>
+                <tr>
+                    <td><b>Жадно-бережливая (Greedy-Thrifty)</b></td>
+                    <td>{avgGreedyThrifty:.3f}</td>
+                    <td>{avgGreedyThrifty/ideal_value*100:.1f}%</td>
+                </tr>
+                <tr>
+                    <td><b>Бережливо-жадная(Thrifty-Greedy)</b></td>
+                    <td>{avgThriftyGreedy:.3f}</td>
+                    <td>{avgThriftyGreedy/ideal_value*100:.1f}%</td>
+                </tr>
+            </table>
+            
+            <h3>Выводы (без учета алгоритмов Munkres):</h3>
+            <ul>
+                <li><b style="color: green;">✓ Лучшая стратегия:</b> {best_strategy} с результатом {best_value:.3f} ({best_value/ideal_value*100:.1f}% от идеала)</li>
+                <li><b style="color: red;">✗ Худшая стратегия:</b> {worst_strategy} с результатом {worst_value:.3f} ({worst_value/ideal_value*100:.1f}% от идеала)</li>
+                <li><b>Разница между лучшей и худшей:</b> {best_value - worst_value:.3f}</li>
+                <li><b>Эффективность лучшей стратегии:</b> {best_value/ideal_value*100:.1f}% от идеального алгоритма</li>
+            </ul>
+            
+            <h3>Рекомендации:</h3>
+            <p>Для данных параметров рекомендуется использовать стратегию <b>{best_strategy}</b>, 
+            так как она показала наилучшие результаты в {number_of_experiments} экспериментах 
+            (без учета алгоритмов Munkres) и достигает {best_value/ideal_value*100:.1f}% от идеального значения.</p>
+            """
+            self.results_text_right.setHtml(full_text)
+            
+            # Переключаемся на вкладку с гистограммой
+            self.tab_widget.setCurrentIndex(0)
+        
+        except ValueError as e:
+            error_text = f"<span style='color: red;'><b>Ошибка ввода данных:</b><br>{str(e)}<br>Проверьте корректность введенных значений.</span>"
+            self.results_text_left.setHtml(error_text)
+            self.results_text_right.setHtml(error_text)
+        except Exception as e:
+            error_text = f"<span style='color: red;'><b>Ошибка при выполнении эксперимента:</b><br>{str(e)}</span>"
+            self.results_text_left.setHtml(error_text)
+            self.results_text_right.setHtml(error_text)
+        finally:
+            self.line_button.setEnabled(True)
+            self.line_button.setText("Получить результаты")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

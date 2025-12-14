@@ -124,6 +124,7 @@ class algo:
         return kth_val, row_idx
     
     def Munkres_Alg(self):
+        """Венгерский алгоритм для минимизации (min)"""
         res = 0
         sizes = self._params.shape
         assigned = set()
@@ -134,6 +135,24 @@ class algo:
         total = 0
         for row, column in indexes:
             value = self._params[row][column]
+            total += value
+            assigned.add(row)
+            values.append(value)
+        return total, np.array(values)
+    
+    def Munkres_Alg_Max(self):
+        """Венгерский алгоритм для максимизации (max)"""
+        max_value = np.max(self._params)
+        cost_matrix = max_value - self._params
+        
+        m = Munkres()
+        indexes = m.compute(cost_matrix.tolist())
+        
+        total = 0
+        values = []
+        assigned = set()
+        for row, column in indexes:
+            value = self._params[row][column]  
             total += value
             assigned.add(row)
             values.append(value)
