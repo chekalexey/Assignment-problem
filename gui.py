@@ -69,18 +69,18 @@ class MainWindow(QMainWindow):
                 font-size: 26px;
                 font-weight: bold;
                 color: white;
-                background-color: #91B081;
-                border: 4px solid #87A878;
+                background-color: #91B081;    /* Главный цвет - зеленый */
+                border: 4px solid #7A9A6E;    /* Более темный оттенок зеленого */
                 border-radius: 20px;
                 padding: 20px;
             }
             QPushButton#leftButton:hover {
-                background-color: #5dade2;
-                border-color: #3498db;
+                background-color: #7A9A6E;    /* Темнее при наведении */
+                border-color: #64885A;        /* Еще темнее */
             }
             QPushButton#leftButton:pressed {
-                background-color: #2980b9;
-                border-color: #1c5a7a;
+                background-color: #64885A;    /* Самый темный зеленый при нажатии */
+                border-color: #4E6B46;
             }
         """)
         btn_left.setCursor(Qt.PointingHandCursor)
@@ -100,22 +100,22 @@ class MainWindow(QMainWindow):
         # Делаем кнопку квадратной и крупной
         btn_right.setFixedSize(250, 250)  # Квадратная кнопка
         btn_right.setStyleSheet("""
-            QPushButton#rightButton {
+           QPushButton#rightButton {
                 font-size: 26px;
                 font-weight: bold;
                 color: white;
-                background-color: #ffa500;
-                border: 4px solid #c0392b;
+                background-color: #ffa500;  /* Главный цвет - оранжевый */
+                border: 4px solid #ff8c00;  /* Более темный оттенок оранжевого */
                 border-radius: 20px;
                 padding: 20px;
             }
             QPushButton#rightButton:hover {
-                background-color: #ec7063;
-                border-color: #e74c3c;
+                background-color: #ff8c00;  /* Темнее при наведении */
+                border-color: #ff7f00;      /* Еще темнее */
             }
             QPushButton#rightButton:pressed {
-                background-color: #c0392b;
-                border-color: #922b21;
+                background-color: #ff7f00;  /* Самый темный оранжевый при нажатии */
+                border-color: #ff6a00;
             }
         """)
         btn_right.setCursor(Qt.PointingHandCursor)
