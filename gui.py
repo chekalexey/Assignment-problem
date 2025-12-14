@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
                               QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy, QTextEdit)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette)
+from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette, QColor, QFont)
 from matgen import *
 import sys
 import numpy as np
@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
         page.setLayout(main_layout)
         self.stacked_widget.addWidget(page)
 
-    def create_second_page(self):
+    def create_second_page(self):       
         """Вторая страница"""
         page = QWidget()
         main_layout = QHBoxLayout(page)
@@ -153,7 +153,7 @@ class MainWindow(QMainWindow):
         btn_next = QPushButton("Далее →")
         btn_next.clicked.connect(lambda: self.go_to_page(2))
         
-        self.line_button = QPushButton("Получить результаты эксперимента", self)
+        self.line_button = QPushButton("Получить результаты", self)
         self.line_button.clicked.connect(self.get_integer_from_line_edit_and_matrix)
 
         # === ДОБАВЛЕНА МАТРИЦА ===
@@ -297,9 +297,9 @@ class MainWindow(QMainWindow):
         
         # Создаем заголовки столбцов (сверху)
         for j in range(size):
-            label_col = QLabel(f"Столбец {j+1}")
+            label_col = QLabel(f"{j+1}")
             label_col.setAlignment(Qt.AlignCenter)
-            label_col.setStyleSheet("font-weight: bold; background-color: #e0e0e0; padding: 2px;")
+            label_col.setStyleSheet("background-color: #ffbdbd; padding: 2px;") #e0e0e0
             label_col.setFixedSize(HEADER_COL_WIDTH, HEADER_HEIGHT)
             label_col.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
             self.matrix_grid_layout.addWidget(label_col, 0, j+1, alignment=Qt.AlignCenter)
@@ -312,9 +312,9 @@ class MainWindow(QMainWindow):
         
         # Создаем заголовки строк (слева)
         for i in range(size):
-            label_row = QLabel(f"Строка {i+1}")
+            label_row = QLabel(f"{i+1}")
             label_row.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            label_row.setStyleSheet("font-weight: bold; background-color: #e0e0e0; padding: 3px;")
+            label_row.setStyleSheet("background-color: #ffbdbd; padding: 3px;")
             label_row.setFixedSize(HEADER_ROW_WIDTH, CELL_HEIGHT)
             label_row.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
             self.matrix_grid_layout.addWidget(label_row, i+1, 0)
@@ -326,11 +326,11 @@ class MainWindow(QMainWindow):
             row_inputs = []
             for j in range(size):
                 line_edit = QLineEdit()
-                line_edit.setStyleSheet("""
-                    QLineEdit {
-                        background-color: #ffc2c2;
-                    }
-                """)
+                # line_edit.setStyleSheet("""
+                #     QLineEdit {
+                #         background-color: #ffc2c2;
+                #     }
+                # """)
                 #line_edit.mousePressEvent = lambda _ : line_edit.selectAll() #select text in line edit upon mouse press
                 line_edit.setFixedSize(CELL_WIDTH, CELL_HEIGHT)
                 line_edit.setAlignment(Qt.AlignCenter)
@@ -439,28 +439,29 @@ class MainWindow(QMainWindow):
 
         title = QLabel("Экспериментальный режим")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 28px; font-weight: bold; margin: 10px; color: #2c3e50;")
+        title.setStyleSheet("font-weight: bold; margin: 10px;")
 
         btn_back = QPushButton("← Назад")
         btn_back.clicked.connect(lambda: self.go_to_page(1))
 
-        btn_home = QPushButton("В главное меню")
+        btn_home = QPushButton("Главное меню")
         btn_home.clicked.connect(lambda: self.go_to_page(0))
 
         # Количество экспериментов
         self.number_of_experminets = QLineEdit("5", self)
         self.number_of_experminets.setPlaceholderText("Введите число экспериментов")
-        self.number_of_experminets.setStyleSheet("font-size: 14px; padding: 8px;")
+        self.number_of_experminets.setStyleSheet("padding-left: 8px;")
         self.number_of_experminets.setValidator(QIntValidator(0, 100, self))
 
-                # Размер матрицы
+        # Размер матрицы
         self.matrix_size = QLineEdit("3", self)
         self.matrix_size.setPlaceholderText("matrix_size")
-        self.matrix_size.setStyleSheet("font-size: 14px; padding: 8px;")
+        self.matrix_size.setStyleSheet("padding-left: 8px;")
         self.matrix_size.setValidator(QIntValidator(1, 16, self))
 
         # Создаем компактный layout для alpha и beta
         alpha_beta_group = QGroupBox("Параметры")
+        #alpha_beta_group.setStyleSheet("font-weight: bold;")
         alpha_beta_layout = QVBoxLayout(alpha_beta_group)
         
         # Создаем таблицу для alpha
@@ -470,27 +471,27 @@ class MainWindow(QMainWindow):
         alpha_grid.setContentsMargins(5, 5, 5, 5)
         
         alpha_label = QLabel("Сахаристость:")
-        alpha_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        alpha_label.setStyleSheet("font-size: 19px;")
         alpha_grid.addWidget(alpha_label, 0, 0, 1, 2)
         
         alpha_min_label = QLabel("min:")
-        alpha_min_label.setStyleSheet("font-size: 13px;")
+        alpha_min_label.setStyleSheet("font-size: 18px;")
         alpha_grid.addWidget(alpha_min_label, 1, 0)
         
         self.alpha_min = QLineEdit("0.1", self)
         self.alpha_min.setPlaceholderText("min")
-        self.alpha_min.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.alpha_min.setStyleSheet("font-size: 18px; padding: 8px;")
         self.alpha_min.setValidator(QDoubleValidator(self))
         self.alpha_min.setMaximumWidth(100)
         alpha_grid.addWidget(self.alpha_min, 1, 1)
         
         alpha_max_label = QLabel("max:")
-        alpha_max_label.setStyleSheet("font-size: 13px;")
+        alpha_max_label.setStyleSheet("font-size: 18px;")
         alpha_grid.addWidget(alpha_max_label, 2, 0)
         
         self.alpha_max = QLineEdit("0.3", self)
         self.alpha_max.setPlaceholderText("max")
-        self.alpha_max.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.alpha_max.setStyleSheet("font-size: 18px; padding: 8px;")
         self.alpha_max.setValidator(QDoubleValidator(self))
         self.alpha_max.setMaximumWidth(100)
         alpha_grid.addWidget(self.alpha_max, 2, 1)
@@ -502,27 +503,27 @@ class MainWindow(QMainWindow):
         beta_grid.setContentsMargins(5, 5, 5, 5)
         
         beta_label = QLabel("Коэффициент деградации:")
-        beta_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        beta_label.setStyleSheet("font-size: 19px;")
         beta_grid.addWidget(beta_label, 0, 0, 1, 2)
         
-        beta_min_label = QLabel("         min:")
-        beta_min_label.setStyleSheet("font-size: 13px;")
+        beta_min_label = QLabel("                   min:")
+        beta_min_label.setStyleSheet("font-size: 18px;")
         beta_grid.addWidget(beta_min_label, 1, 0)
         
         self.beta_min = QLineEdit("0.1", self)
         self.beta_min.setPlaceholderText("    min")
-        self.beta_min.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.beta_min.setStyleSheet("font-size: 18px; padding: 8px;")
         self.beta_min.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
         self.beta_min.setMaximumWidth(100)
         beta_grid.addWidget(self.beta_min, 1, 1)
         
-        beta_max_label = QLabel("         max:")
-        beta_max_label.setStyleSheet("font-size: 13px;")
+        beta_max_label = QLabel("                   max:")
+        beta_max_label.setStyleSheet("font-size: 18px;")
         beta_grid.addWidget(beta_max_label, 2, 0)
         
         self.beta_max = QLineEdit("0.3", self)
         self.beta_max.setPlaceholderText("    max")
-        self.beta_max.setStyleSheet("font-size: 14px; padding: 6px;")
+        self.beta_max.setStyleSheet("font-size: 18px; padding: 8px;")
         self.beta_max.setValidator(QDoubleValidator(0.00001, 0.99999, 5, self))
         self.beta_max.setMaximumWidth(100)
         beta_grid.addWidget(self.beta_max, 2, 1)
@@ -537,16 +538,16 @@ class MainWindow(QMainWindow):
 
         radio_buttons_layout = QHBoxLayout()
         self.concentrated = QRadioButton("Концентрированное", self)
-        self.concentrated.setStyleSheet("font-size: 14px;")
+        self.concentrated.setStyleSheet("font-size: 18px;")
         self.uniform = QRadioButton("Равномерное", self)
-        self.uniform.setStyleSheet("font-size: 14px;")
+        self.uniform.setStyleSheet("font-size: 18px;")
         radio_buttons_layout.addWidget(self.concentrated)
         radio_buttons_layout.addWidget(self.uniform)
         
-        gb = QGroupBox("Распределение😎")
+        gb = QGroupBox("Распределение 😎")
         gb.setLayout(radio_buttons_layout)
 
-        self.line_button = QPushButton("Получить результаты эксперимента", self)
+        self.line_button = QPushButton("Получить результаты", self)
         self.line_button.clicked.connect(self.get_integer_from_line_edit)
         
         ######################SVEKLA########################
@@ -577,13 +578,11 @@ class MainWindow(QMainWindow):
         
         # Количество экспериментов
         exp_label = QLabel("Количество экспериментов:")
-        exp_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         optionsLayout.addWidget(exp_label)
         optionsLayout.addWidget(self.number_of_experminets)
 
                 # Размер матрицы
         size_label = QLabel("Размер матрицы:")
-        size_label.setStyleSheet("font-weight: bold; font-size: 14px;")
         optionsLayout.addWidget(size_label)
         optionsLayout.addWidget(self.matrix_size)
         
@@ -666,6 +665,18 @@ class MainWindow(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+
+    # Styling
+    global_font = QFont("Comic Sans MS", 20) 
+    app.setFont(global_font)
+    #app.setStyleSheet("QWidget { background-color: #b50070; }")
+    palette = app.palette()
+    light_pink_color = QColor(255, 217, 217) 
+    app.setStyleSheet("QPushButton { background-color: #b5dbff }")
+    palette.setColor(QPalette.ColorRole.Window, light_pink_color)
+    palette.setColor(QPalette.ColorRole.Button, light_pink_color)
+    app.setPalette(palette)
+
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
