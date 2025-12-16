@@ -592,7 +592,7 @@ class MainWindow(QMainWindow):
 
         x, y = a.Munkres_Alg_Max()
         lineEditStr += f"total Munkres_Alg (Max) {x} {y}\n"
-        print(f"total Munkres_Alg_Max (Max) {x} {y}")
+        print(f"total Munkres_Alg (Max) {x} {y}")
 
         x, y = a.Greedy()
         lineEditStr += f"total Greedy {x} {y}\n"
