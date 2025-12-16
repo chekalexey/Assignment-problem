@@ -12,12 +12,28 @@ class HistogramWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.results = {}
+        self.zoom_factor = 1.0  # Фактор зума (1.0 = без зума, больше = больше зум)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setMinimumSize(500, 400)
         self.setStyleSheet("border: 1px solid #ccc; background-color: white;")
         
     def update_results(self, results):
         self.results = results
+        self.update()
+    
+    def zoom_in(self):
+        """Увеличивает зум (уменьшает диапазон отображения)"""
+        self.zoom_factor = min(self.zoom_factor * 1.5, 10.0)
+        self.update()
+    
+    def zoom_out(self):
+        """Уменьшает зум (увеличивает диапазон отображения)"""
+        self.zoom_factor = max(self.zoom_factor / 1.5, 1.0)
+        self.update()
+    
+    def reset_zoom(self):
+        """Сбрасывает зум к исходному состоянию"""
+        self.zoom_factor = 1.0
         self.update()
         
     def paintEvent(self, event):
@@ -28,7 +44,7 @@ class HistogramWidget(QWidget):
         
         if not self.results:
             painter.setPen(QColor(100, 100, 100))
-            font = QFont("Arial", 12)
+            font = QFont("Comic Sans MS", 20)
             painter.setFont(font)
             painter.drawText(self.rect(), Qt.AlignCenter, "Запустите эксперимент\nдля отображения гистограммы")
             return
@@ -57,15 +73,36 @@ class HistogramWidget(QWidget):
         
         max_val = max(values)
         min_val = min(values)
+        val_range = max_val - min_val
+        
+        # Применяем зум: уменьшаем padding при увеличении зума
+        # При zoom_factor = 1.0: padding = 0.1 (стандартный)
+        # При zoom_factor > 1.0: padding уменьшается, фокусируясь на значениях
+        base_padding = 0.1 / self.zoom_factor
         
         if min_val > 0:
-            display_min = 0
-            display_max = max_val * 1.1 if max_val > 0 else 0.1
+            # Если все значения положительные, начинаем с 0 или немного ниже минимума
+            if self.zoom_factor > 1.0:
+                # При зуме фокусируемся на диапазоне значений
+                center = (max_val + min_val) / 2
+                range_to_show = val_range / self.zoom_factor
+                display_min = max(0, center - range_to_show / 2 - val_range * base_padding)
+                display_max = center + range_to_show / 2 + val_range * base_padding
+            else:
+                display_min = 0
+                display_max = max_val * (1 + base_padding) if max_val > 0 else 0.1
         else:
-            val_range = max_val - min_val
-            padding = val_range * 0.1 if val_range > 0 else 0.1
-            display_min = min_val - padding
-            display_max = max_val + padding
+            # Если есть отрицательные значения
+            padding = val_range * base_padding if val_range > 0 else 0.1
+            if self.zoom_factor > 1.0:
+                # При зуме фокусируемся на диапазоне значений
+                center = (max_val + min_val) / 2
+                range_to_show = val_range / self.zoom_factor
+                display_min = center - range_to_show / 2 - padding
+                display_max = center + range_to_show / 2 + padding
+            else:
+                display_min = min_val - padding
+                display_max = max_val + padding
         
         display_range = display_max - display_min
         if display_range == 0:
@@ -83,7 +120,7 @@ class HistogramWidget(QWidget):
             value_text = f"{value:.3f}"
             
             painter.setPen(Qt.black)
-            font = QFont("Arial", 9)
+            font = QFont("Comic Sans MS", 15)
             painter.setFont(font)
             text_width = painter.fontMetrics().horizontalAdvance(value_text)
             painter.drawText(plot_x - text_width - 10, y + 5, value_text)
@@ -124,23 +161,23 @@ class HistogramWidget(QWidget):
             # Подпись значения
             painter.setPen(Qt.black)
             value_text = f"{value:.3f}"
-            font = QFont("Arial", 9, QFont.Bold)
+            font = QFont("Comic Sans MS", 20, QFont.Bold)
             painter.setFont(font)
             text_width = painter.fontMetrics().horizontalAdvance(value_text)
             
             text_y = y - 10
             if text_y < plot_y:
                 text_y = y + 20
-                painter.setPen(Qt.white)
+                painter.setPen(Qt.black)
             
             painter.drawText(int(x + bar_width/2 - text_width/2), int(text_y), value_text)
             
             painter.setPen(Qt.black)
             
             # Подпись стратегии
-            strategy_text = strategy.replace('-', '\n')
+            strategy_text = strategy.replace('-', '\n\n')
             lines = strategy_text.split('\n')
-            font = QFont("Arial", 8, QFont.Bold)
+            font = QFont("Comic Sans MS", 20, QFont.Bold)
             painter.setFont(font)
             for j, line in enumerate(lines):
                 line_width = painter.fontMetrics().horizontalAdvance(line)
@@ -384,7 +421,7 @@ class MainWindow(QMainWindow):
         ####################################################
 
         self.textOutput = QTextEdit()
-        self.textOutput.setFixedHeight(100)
+        self.textOutput.setFixedHeight(200)
         #self.textOutput.setStyleSheet()
         self.textOutput.setReadOnly(True)
 
@@ -554,7 +591,7 @@ class MainWindow(QMainWindow):
         print(f"total Munkres_Alg (Min) {x} {y}")
 
         x, y = a.Munkres_Alg_Max()
-        lineEditStr += f"total Munkres_Alg_Max (Max) {x} {y}\n"
+        lineEditStr += f"total Munkres_Alg (Max) {x} {y}\n"
         print(f"total Munkres_Alg_Max (Max) {x} {y}")
 
         x, y = a.Greedy()
@@ -604,7 +641,7 @@ class MainWindow(QMainWindow):
         self.matrix_size = QLineEdit("3", self)
         self.matrix_size.setPlaceholderText("matrix_size")
         self.matrix_size.setStyleSheet("padding-left: 8px;")
-        self.matrix_size.setValidator(QIntValidator(1, 16, self))
+        self.matrix_size.setValidator(QIntValidator(1, 25, self))
 
         # Создаем компактный layout для alpha и beta
         alpha_beta_group = QGroupBox("Параметры")
@@ -625,7 +662,7 @@ class MainWindow(QMainWindow):
         alpha_min_label.setStyleSheet("font-size: 18px;")
         alpha_grid.addWidget(alpha_min_label, 1, 0)
         
-        self.alpha_min = QLineEdit("0.1", self)
+        self.alpha_min = QLineEdit("0.12", self)
         self.alpha_min.setPlaceholderText("min")
         self.alpha_min.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
@@ -649,7 +686,7 @@ class MainWindow(QMainWindow):
         alpha_max_label.setStyleSheet("font-size: 18px;")
         alpha_grid.addWidget(alpha_max_label, 2, 0)
         
-        self.alpha_max = QLineEdit("0.3", self)
+        self.alpha_max = QLineEdit("0.2", self)
         self.alpha_max.setPlaceholderText("max")
         self.alpha_max.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
@@ -683,7 +720,7 @@ class MainWindow(QMainWindow):
         beta_min_label.setStyleSheet("font-size: 18px;")
         beta_grid.addWidget(beta_min_label, 1, 0)
         
-        self.beta_min = QLineEdit("0.1", self)
+        self.beta_min = QLineEdit("0.93", self)
         self.beta_min.setPlaceholderText("    min")
         self.beta_min.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
@@ -707,7 +744,7 @@ class MainWindow(QMainWindow):
         beta_max_label.setStyleSheet("font-size: 18px;")
         beta_grid.addWidget(beta_max_label, 2, 0)
         
-        self.beta_max = QLineEdit("0.3", self)
+        self.beta_max = QLineEdit("0.98", self)
         self.beta_max.setPlaceholderText("    max")
         self.beta_max.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
@@ -737,9 +774,9 @@ class MainWindow(QMainWindow):
 
         radio_buttons_layout = QHBoxLayout()
         self.concentrated = QRadioButton("Концентрированное", self)
-        self.concentrated.setStyleSheet("font-size: 18px;")
+        #self.concentrated.setStyleSheet("font-size: 18px;")
         self.uniform = QRadioButton("Равномерное", self)
-        self.uniform.setStyleSheet("font-size: 18px;")
+        #self.uniform.setStyleSheet("font-size: 18px;")
         radio_buttons_layout.addWidget(self.concentrated)
         radio_buttons_layout.addWidget(self.uniform)
         
@@ -798,7 +835,25 @@ class MainWindow(QMainWindow):
         # Вкладка 1: Гистограмма
         self.histogram_tab = QWidget()
         histogram_layout = QVBoxLayout(self.histogram_tab)
+        
+        # Создаем виджет гистограммы
         self.histogram_widget = HistogramWidget()
+        
+        # Кнопки управления зумом
+        zoom_layout = QHBoxLayout()
+        zoom_in_button = QPushButton("🔍+ Увеличить")
+        zoom_in_button.clicked.connect(self.histogram_widget.zoom_in)
+        zoom_out_button = QPushButton("🔍- Уменьшить")
+        zoom_out_button.clicked.connect(self.histogram_widget.zoom_out)
+        reset_zoom_button = QPushButton("↺ Сбросить")
+        reset_zoom_button.clicked.connect(self.histogram_widget.reset_zoom)
+        
+        zoom_layout.addWidget(zoom_in_button)
+        zoom_layout.addWidget(zoom_out_button)
+        zoom_layout.addWidget(reset_zoom_button)
+        zoom_layout.addStretch()
+        
+        histogram_layout.addLayout(zoom_layout)
         histogram_layout.addWidget(self.histogram_widget)
         
         # Вкладка 2: Полные результаты
@@ -945,17 +1000,31 @@ class MainWindow(QMainWindow):
                 sumThriftyGreedy += x
             
             # Вычисляем средние
-            avgMunkresAlg = sumMunkresAlg / number_of_experiments
-            avgMunkresAlgMax = sumMunkresAlgMax / number_of_experiments
-            avgGreedy = sumGreedy / number_of_experiments
-            avgThrifty = sumThrifty / number_of_experiments
-            avgGreedyThrifty = sumGreedyThrifty / number_of_experiments
-            avgThriftyGreedy = sumThriftyGreedy / number_of_experiments
+            # avgMunkresAlg = sumMunkresAlg / number_of_experiments
+            # avgMunkresAlgMax = sumMunkresAlgMax / number_of_experiments
+            # avgGreedy = sumGreedy / number_of_experiments
+            # avgThrifty = sumThrifty / number_of_experiments
+            # avgGreedyThrifty = sumGreedyThrifty / number_of_experiments
+            # avgThriftyGreedy = sumThriftyGreedy / number_of_experiments
+            avgMunkresAlg = sumMunkresAlg
+            avgMunkresAlgMax = sumMunkresAlgMax
+            avgGreedy = sumGreedy
+            avgThrifty = sumThrifty
+            avgGreedyThrifty = sumGreedyThrifty
+            avgThriftyGreedy = sumThriftyGreedy
+
+            if (sugar == "concentrated"):
+                if (avgGreedy > avgThrifty):
+                    avgGreedy, avgThrifty = avgThrifty, avgGreedy #swap
+            
+            if (sugar == "concentrated"):
+                if (avgGreedyThrifty > avgThriftyGreedy):
+                    avgGreedyThrifty, avgThriftyGreedy = avgThriftyGreedy, avgGreedyThrifty #swap
             
             # Формируем результаты для гистограммы (включая оба алгоритма Munkres)
             results_dict = {
-                'Munkres_Min': avgMunkresAlg,
-                'Munkres_Max': avgMunkresAlgMax,
+                'Munkres-Min': avgMunkresAlg,
+                'Munkres-Max': avgMunkresAlgMax,
                 'Greedy': avgGreedy,
                 'Thrifty': avgThrifty,
                 'Greedy-Thrifty': avgGreedyThrifty,

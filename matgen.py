@@ -9,9 +9,9 @@ class MatrixGenerator:
         v: int = 15,
         distribution_type: str = "uniform",
         a_min: float = 0.12,
-        a_max: float = 0.22,
-        beta_min: float = 0.85,
-        beta_max: float = 0.99,
+        a_max: float = 0.2,
+        beta_min: float = 0.93,
+        beta_max: float = 0.98,
     ):
         if n <= 0 or v <= 0:
             raise ValueError("n и v должны быть больше 0")
@@ -231,12 +231,15 @@ class algo:
 
 if __name__ == "__main__":
     #Example
-    gen1 = MatrixGenerator(3, 3, "concentrated") #or uniform
+    gen1 = MatrixGenerator(15, 15, "concentrated") #or uniform
     print(gen1.D_matrix)
     a = algo(gen1.D_matrix)
-    print(a.Munkres_Alg())
-    print(a.Greedy())
-    print(a.Thrifty())
-    print(a.Greedy_Thrifty(1))
-    print(a.Thrifty_Greedy(1))
+    #print(a.Munkres_Alg())
+    sum1, pupu = a.Greedy()
+    sum2, pupupu = a.Thrifty()
+    # print(a.Greedy())
+    # print(a.Thrifty())
+    print(sum1, sum2)
+    # print(a.Greedy_Thrifty(1))
+    # print(a.Thrifty_Greedy(1))
     
