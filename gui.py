@@ -582,35 +582,95 @@ class MainWindow(QMainWindow):
                     self.matrix_inputs[i][j].setText("0")
 
     def get_integer_from_line_edit_and_matrix(self):
-        lineEditStr = ""
-        matrix = self.get_matrix_data()
-        a = algo(matrix)
-
-        x, y = a.Munkres_Alg()
-        lineEditStr += f"total Munkres_Alg (Min) {x} {y}\n"
-        print(f"total Munkres_Alg (Min) {x} {y}")
-
-        x, y = a.Munkres_Alg_Max()
-        lineEditStr += f"total Munkres_Alg (Max) {x} {y}\n"
-        print(f"total Munkres_Alg (Max) {x} {y}")
-
-        x, y = a.Greedy()
-        lineEditStr += f"total Greedy {x} {y}\n"
-        print(f"total Greedy {x} {y}")
-
-        x, y = a.Thrifty()
-        lineEditStr += f"total Thrifty {x} {y}\n"
-        print(f"total Thrifty {x} {y}")
-
-        x, y = a.Greedy_Thrifty(matrix.shape[0]//2)
-        lineEditStr += f"total Greedy_Thrifty {x} {y}\n"
-        print(f"total Greedy_Thrifty {x} {y}")
-
-        x, y = a.Thrifty_Greedy(matrix.shape[0]//2)
-        lineEditStr += f"total Thrifty_Greedy {x} {y}\n"
-        print(f"total Thrifty_Greedy {x} {y}")
-
-        self.textOutput.setText(lineEditStr)
+        try:
+            self.line_button.setEnabled(False)
+            self.line_button.setText("Вычисляется...")
+            
+            matrix = self.get_matrix_data()
+            if matrix is None:
+                self.textOutput.setHtml("<span style='color: red;'><b>Ошибка:</b> Не удалось получить данные матрицы</span>")
+                return
+                
+            a = algo(matrix)
+            
+            # Получаем результаты всех алгоритмов
+            munkres_min_total, _ = a.Munkres_Alg()
+            munkres_max_total, _ = a.Munkres_Alg_Max()
+            greedy_total, _ = a.Greedy()
+            thrifty_total, _ = a.Thrifty()
+            greedy_thrifty_total, _ = a.Greedy_Thrifty(matrix.shape[0]//2)
+            thrifty_greedy_total, _ = a.Thrifty_Greedy(matrix.shape[0]//2)
+            
+            # Собираем все стратегии для сравнения (без Munkres)
+            comparison_results = {
+                'Жадный (Greedy)': greedy_total,
+                'Бережливый (Thrifty)': thrifty_total,
+                'Жадно-бережливый': greedy_thrifty_total,
+                'Бережливо-жадный': thrifty_greedy_total
+            }
+            
+            # Находим лучшую и худшую стратегии (без Munkres)
+            best_strategy = max(comparison_results, key=comparison_results.get)
+            worst_strategy = min(comparison_results, key=comparison_results.get)
+            best_value = comparison_results[best_strategy]
+            worst_value = comparison_results[worst_strategy]
+            ideal_value = munkres_max_total
+            
+            # Формируем красивый HTML вывод
+            html_text = f"""
+            <h3 style="color: #2c3e50; text-align: center; margin-bottom: 15px;">Результаты расчета</h3>
+            
+            <p style="margin-bottom: 15px;"><b>Матрица:</b> {matrix.shape[0]}×{matrix.shape[1]}</p>
+            
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin-bottom: 10px;">Результаты алгоритмов:</h4>
+                <div style="margin-left: 20px;">
+                    <p style="margin: 5px 0;">• <b>Венгерский (Min):</b> {munkres_min_total:.3f} ({munkres_min_total/ideal_value*100:.1f}%)</p>
+                    <p style="margin: 5px 0; background-color: #e8f4e8; padding: 3px 8px; border-radius: 3px;">
+                        • <b>Венгерский (Max) - идеал:</b> {ideal_value:.3f} (100.0%)
+                    </p>
+                    <p style="margin: 5px 0;">• <b>Жадный (Greedy):</b> {greedy_total:.3f} ({greedy_total/ideal_value*100:.1f}%)</p>
+                    <p style="margin: 5px 0;">• <b>Бережливый (Thrifty):</b> {thrifty_total:.3f} ({thrifty_total/ideal_value*100:.1f}%)</p>
+                    <p style="margin: 5px 0;">• <b>Жадно-бережливый:</b> {greedy_thrifty_total:.3f} ({greedy_thrifty_total/ideal_value*100:.1f}%)</p>
+                    <p style="margin: 5px 0;">• <b>Бережливо-жадный:</b> {thrifty_greedy_total:.3f} ({thrifty_greedy_total/ideal_value*100:.1f}%)</p>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin-bottom: 10px;">Сравнение стратегий (без Munkres):</h4>
+                <div style="background-color: #d4edda; padding: 8px; border-radius: 4px; margin-bottom: 5px;">
+                    <b>Лучшая стратегия:</b> {best_strategy}<br>
+                    <b>Результат:</b> {best_value:.3f} ({best_value/ideal_value*100:.1f}% от идеала)
+                </div>
+                
+                <div style="background-color: #f8d7da; padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+                    <b>Худшая стратегия:</b> {worst_strategy}<br>
+                    <b>Результат:</b> {worst_value:.3f} ({worst_value/ideal_value*100:.1f}% от идеала)
+                </div>
+                
+                <p style="margin: 5px 0;"><b>Разница:</b> {best_value - worst_value:.3f}</p>
+                <p style="margin: 5px 0;"><b>Эффективность лучшей:</b> {best_value/ideal_value*100:.1f}% от идеального алгоритма</p>
+            </div>
+            
+            <div style="background-color: #e3f2fd; padding: 8px; border-radius: 4px;">
+                <b>Рекомендация:</b> Используйте стратегию <b>{best_strategy}</b>
+            </div>
+            """
+            
+            self.textOutput.setHtml(html_text)
+            
+        except Exception as e:
+            error_html = f"""
+            <div style="background-color: #ffebee; padding: 10px; border-radius: 4px;">
+                <b style="color: #d32f2f;">Ошибка при расчетах</b><br>
+                {type(e).__name__}: {str(e)}<br>
+                Проверьте корректность данных в матрице.
+            </div>
+            """
+            self.textOutput.setHtml(error_html)
+        finally:
+            self.line_button.setEnabled(True)
+            self.line_button.setText("Получить результаты")
 
     def create_third_page(self):
         """Третья страница"""
