@@ -1220,5 +1220,5 @@ if __name__ == "__main__":
     app.setPalette(palette)
 
     window = MainWindow()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec())
