@@ -4,7 +4,16 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette, QPainter, QPen, QColor, QFont, QIcon)
 from matgen import *
 import sys
+import os
 import numpy as np
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 # ================== ДОБАВЛЕН КЛАСС ДЛЯ ГИСТОГРАММЫ ==================
 class HistogramWidget(QWidget):
@@ -1220,6 +1229,6 @@ if __name__ == "__main__":
     app.setPalette(palette)
 
     window = MainWindow()
-    window.setWindowIcon(QIcon("beetroot.png"))
+    window.setWindowIcon(QIcon(resource_path("beetroot.png")))
     window.showMaximized()
     sys.exit(app.exec())
