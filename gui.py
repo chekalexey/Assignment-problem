@@ -49,7 +49,7 @@ class HistogramWidget(QWidget):
             painter.drawText(self.rect(), Qt.AlignCenter, "Запустите эксперимент\nдля отображения гистограммы")
             return
         
-        margin = 60
+        margin = 80 #60
         plot_width = self.width() - 2 * margin
         plot_height = self.height() - 2 * margin
         plot_x = margin
@@ -120,7 +120,7 @@ class HistogramWidget(QWidget):
             value_text = f"{value:.3f}"
             
             painter.setPen(Qt.black)
-            font = QFont("Comic Sans MS", 15)
+            font = QFont("Comic Sans MS", 13)
             painter.setFont(font)
             text_width = painter.fontMetrics().horizontalAdvance(value_text)
             painter.drawText(plot_x - text_width - 10, y + 5, value_text)
@@ -692,14 +692,14 @@ class MainWindow(QMainWindow):
         btn_home.clicked.connect(lambda: self.go_to_page(0))
 
         # Количество экспериментов
-        self.number_of_experminets = QLineEdit("5", self)
+        self.number_of_experminets = QLineEdit("100", self)
         self.number_of_experminets.setPlaceholderText("Введите число экспериментов")
         self.number_of_experminets.setStyleSheet("padding-left: 8px;")
         self.number_of_experminets.setValidator(QIntValidator(0, 100, self))
 
         # Размер матрицы
-        self.matrix_size = QLineEdit("3", self)
-        self.matrix_size.setPlaceholderText("matrix_size")
+        self.matrix_size = QLineEdit("15", self)
+        self.matrix_size.setPlaceholderText("Введите размер матрицы")
         self.matrix_size.setStyleSheet("padding-left: 8px;")
         self.matrix_size.setValidator(QIntValidator(1, 25, self))
 
@@ -723,7 +723,7 @@ class MainWindow(QMainWindow):
         alpha_grid.addWidget(alpha_min_label, 1, 0)
         
         self.alpha_min = QLineEdit("0.12", self)
-        self.alpha_min.setPlaceholderText("min")
+        self.alpha_min.setPlaceholderText("alpha min")
         self.alpha_min.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
         alpha_min_validator = QDoubleValidator(self)
@@ -747,7 +747,7 @@ class MainWindow(QMainWindow):
         alpha_grid.addWidget(alpha_max_label, 2, 0)
         
         self.alpha_max = QLineEdit("0.2", self)
-        self.alpha_max.setPlaceholderText("max")
+        self.alpha_max.setPlaceholderText("alpha max")
         self.alpha_max.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
         alpha_max_validator = QDoubleValidator(self)
@@ -772,16 +772,16 @@ class MainWindow(QMainWindow):
         beta_grid.setSpacing(10)
         beta_grid.setContentsMargins(5, 5, 5, 5)
         
-        beta_label = QLabel("Коэффициент деградации:")
+        beta_label = QLabel("                      Коэффициент деградации:")
         beta_label.setStyleSheet("font-size: 19px;")
         beta_grid.addWidget(beta_label, 0, 0, 1, 2)
         
-        beta_min_label = QLabel("                   min:")
+        beta_min_label = QLabel("                                            min:")
         beta_min_label.setStyleSheet("font-size: 18px;")
         beta_grid.addWidget(beta_min_label, 1, 0)
         
         self.beta_min = QLineEdit("0.93", self)
-        self.beta_min.setPlaceholderText("    min")
+        self.beta_min.setPlaceholderText("beta min")
         self.beta_min.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
         beta_min_validator = QDoubleValidator(0.00001, 0.99999, 5, self)
@@ -800,12 +800,12 @@ class MainWindow(QMainWindow):
         self.beta_min.setMaximumWidth(100)
         beta_grid.addWidget(self.beta_min, 1, 1)
         
-        beta_max_label = QLabel("                   max:")
+        beta_max_label = QLabel("                                            max:")
         beta_max_label.setStyleSheet("font-size: 18px;")
         beta_grid.addWidget(beta_max_label, 2, 0)
         
         self.beta_max = QLineEdit("0.98", self)
-        self.beta_max.setPlaceholderText("    max")
+        self.beta_max.setPlaceholderText("beta max")
         self.beta_max.setStyleSheet("font-size: 18px; padding: 8px;")
         # Настраиваем валидатор для использования точки как десятичного разделителя
         beta_max_validator = QDoubleValidator(0.00001, 0.99999, 5, self)
@@ -840,7 +840,7 @@ class MainWindow(QMainWindow):
         radio_buttons_layout.addWidget(self.concentrated)
         radio_buttons_layout.addWidget(self.uniform)
         
-        gb = QGroupBox("Распределение 😎")
+        gb = QGroupBox("Распределение") #😎
         gb.setLayout(radio_buttons_layout)
 
         self.line_button = QPushButton("Получить результаты", self)
@@ -915,7 +915,7 @@ class MainWindow(QMainWindow):
         
         histogram_layout.addLayout(zoom_layout)
         histogram_layout.addWidget(self.histogram_widget)
-        
+
         # Вкладка 2: Полные результаты
         self.results_tab = QWidget()
         results_layout = QVBoxLayout(self.results_tab)
