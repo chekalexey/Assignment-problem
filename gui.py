@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, 
                               QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QStackedWidget, QLineEdit, QRadioButton, QGroupBox, QScrollArea, QSpinBox, QGridLayout, QSizePolicy, QTextEdit, QTabWidget)
 from PySide6.QtCore import Qt
-from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette, QPainter, QPen, QColor, QFont)
+from PySide6.QtGui import (QIntValidator, QDoubleValidator, QPixmap, QPalette, QPainter, QPen, QColor, QFont, QIcon)
 from matgen import *
 import sys
 import numpy as np
@@ -1220,5 +1220,6 @@ if __name__ == "__main__":
     app.setPalette(palette)
 
     window = MainWindow()
+    window.setWindowIcon(QIcon("beetroot.png"))
     window.showMaximized()
     sys.exit(app.exec())
